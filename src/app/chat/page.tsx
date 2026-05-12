@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Message = {
   role: "user" | "assistant";
@@ -18,6 +20,11 @@ export default function ChatPage() {
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   async function sendMessage() {
     const userText = input.trim();
@@ -140,13 +147,23 @@ export default function ChatPage() {
                   }`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-3xl px-5 py-4 text-sm leading-7 ${
+                    className={`max-w-[85%] rounded-3xl px-5 py-4 text-sm leading-7 ${
                       message.role === "user"
                         ? "bg-cyan-400 text-slate-950"
                         : "bg-slate-800 text-slate-100"
                     }`}
                   >
-                    {message.content}
+                    {message.role === "assistant" ? (
+                      <div className="prose prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-strong:text-white prose-code:rounded prose-code:bg-slate-950 prose-code:px-1 prose-code:py-0.5 prose-code:text-cyan-200">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap">
+                        {message.content}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -154,10 +171,17 @@ export default function ChatPage() {
               {loading && (
                 <div className="flex justify-start">
                   <div className="rounded-3xl bg-slate-800 px-5 py-4 text-sm text-slate-300">
-                    AI 正在思考中...
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300"></span>
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300 delay-150"></span>
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300 delay-300"></span>
+                      <span className="ml-2">AI 正在思考中...</span>
+                    </div>
                   </div>
                 </div>
               )}
+
+              <div ref={bottomRef} />
             </div>
 
             <div className="border-t border-slate-800 p-5">
@@ -179,12 +203,12 @@ export default function ChatPage() {
                   disabled={loading}
                   className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? "发送中" : "发送"}
+                  {loading ? "思考中" : "发送"}
                 </button>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                当前已接入 DeepSeek 模型，测试阶段请勿输入敏感信息。
+                当前已接入 DeepSeek 模型，测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。
               </p>
             </div>
           </section>
