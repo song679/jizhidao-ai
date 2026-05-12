@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { supabase } from "@/lib/supabase";
 
 type Message = {
   role: "user" | "assistant";
@@ -21,10 +22,41 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+  
+  useEffect(() => {
+  async function getUser() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user?.email) {
+      setUserEmail(user.email);
+    }
+  }
+
+  getUser();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    setUserEmail(session?.user?.email || "");
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
+
+async function logout() {
+  await supabase.auth.signOut();
+  setUserEmail("");
+  window.location.href = "/login";
+}
 
   async function sendMessage() {
     const userText = input.trim();
@@ -95,9 +127,26 @@ export default function ChatPage() {
             <button className="rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-900">
               当前模型：DeepSeek
             </button>
-            <button className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950">
-              登录 / 注册
-            </button>
+            {userEmail ? (
+              <div className="flex items-center gap-3">
+                <span className="hidden text-sm text-slate-300 md:inline">
+                  {userEmail}
+                </span>
+                <button
+                  onClick={logout}
+                  className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950"
+                >
+                  退出登录
+                </button>
+              </div>
+            ) : (
+              <a
+                href="/login"
+                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950"
+              >
+                登录 / 注册
+              </a>
+            )}
           </div>
         </header>
 

@@ -33,9 +33,12 @@ export default function Home() {
             <a href="#" className="hover:text-white">AI工具</a>
             <a href="#" className="hover:text-white">会员价格</a>
           </nav>
-          <button className="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-950">
+          <a
+           href="/login"
+           className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950"
+          >
             登录 / 注册
-          </button>
+          </a>
         </header>
 
         <div className="grid flex-1 items-center gap-12 py-20 md:grid-cols-2">
