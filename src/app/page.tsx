@@ -55,12 +55,18 @@ export default function Home() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <button className="rounded-full bg-cyan-400 px-7 py-3 font-semibold text-slate-950 hover:bg-cyan-300">
-                立即体验
-              </button>
-              <button className="rounded-full border border-slate-700 px-7 py-3 font-semibold text-white hover:bg-slate-900">
+              <a
+               href="/chat"
+               className="rounded-full bg-cyan-400 px-7 py-3 font-semibold text-slate-950 hover:bg-cyan-300"
+                  >
+                 立即体验
+              </a>
+              <a
+                href="/chat"
+               className="rounded-full border border-slate-700 px-7 py-3 font-semibold text-white hover:bg-slate-900"
+               >
                 查看AI工具
-              </button>
+              </a>
             </div>
 
             <div className="mt-8 grid grid-cols-3 gap-4 text-sm text-slate-400">
