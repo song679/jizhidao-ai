@@ -1,20 +1,80 @@
+"use client";
+
+import { useState } from "react";
+
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export default function ChatPage() {
-  const messages = [
+  const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
         "你好，我是极智岛 AI。你可以问我写作、办公、电商、短视频、学习、代码等问题。",
     },
-    {
-      role: "user",
-      content: "帮我写一段适合小红书发布的 AI 工具推荐文案。",
-    },
-    {
-      role: "assistant",
-      content:
-        "当然可以。你可以这样写：今天分享几个真正能提高效率的 AI 工具，不堆概念，只推荐普通人真的用得上的工具……",
-    },
-  ];
+  ]);
+
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function sendMessage() {
+    const userText = input.trim();
+
+    if (!userText || loading) return;
+
+    const newMessages: Message[] = [
+      ...messages,
+      {
+        role: "user",
+        content: userText,
+      },
+    ];
+
+    setMessages(newMessages);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.detail || data?.error || "请求失败");
+      }
+
+      setMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content: data.reply || "抱歉，我暂时没有生成回复。",
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+
+      setMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content:
+            "抱歉，AI 暂时无法回复。请检查 DeepSeek API Key、账户余额或稍后再试。",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -90,21 +150,41 @@ export default function ChatPage() {
                   </div>
                 </div>
               ))}
+
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-3xl bg-slate-800 px-5 py-4 text-sm text-slate-300">
+                    AI 正在思考中...
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-slate-800 p-5">
               <div className="flex gap-3">
                 <textarea
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      sendMessage();
+                    }
+                  }}
                   className="min-h-14 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
                   placeholder="输入你的问题，比如：帮我写一篇小红书文案..."
                 />
-                <button className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300">
-                  发送
+                <button
+                  onClick={sendMessage}
+                  disabled={loading}
+                  className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "发送中" : "发送"}
                 </button>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                当前为界面演示版本，下一步将接入真实 AI 模型。
+                当前已接入 DeepSeek 模型，测试阶段请勿输入敏感信息。
               </p>
             </div>
           </section>
