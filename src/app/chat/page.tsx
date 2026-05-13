@@ -129,12 +129,14 @@ async function logout() {
     } catch (error) {
       console.error(error);
 
+      const errorMessage =
+        error instanceof Error ? error.message : "未知错误";
+
       setMessages([
         ...newMessages,
         {
           role: "assistant",
-          content:
-            "抱歉，AI 暂时无法回复。请检查 DeepSeek API Key、账户余额或稍后再试。",
+          content: `抱歉，AI 暂时无法回复。\n\n错误信息：${errorMessage}`,
         },
       ]);
     } finally {
