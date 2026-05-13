@@ -59,11 +59,37 @@ async function logout() {
 }
 
   async function sendMessage() {
-    const userText = input.trim();
+  const userText = input.trim();
 
-    if (!userText || loading) return;
+  if (!userText || loading) return;
 
-    const newMessages: Message[] = [
+  if (!userEmail) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "请先登录后再使用聊天功能。",
+      },
+    ]);
+    return;
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "登录状态已失效，请重新登录后再使用聊天功能。",
+      },
+    ]);
+    return;
+  }
+
+  const newMessages: Message[] = [
       ...messages,
       {
         role: "user",
@@ -77,14 +103,15 @@ async function logout() {
 
     try {
       const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: newMessages,
-        }),
-      });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
+  },
+  body: JSON.stringify({
+    messages: newMessages,
+  }),
+});
 
       const data = await response.json();
 
@@ -234,25 +261,39 @@ async function logout() {
             </div>
 
             <div className="border-t border-slate-800 p-5">
+              {!userEmail && (
+                <div className="mb-4 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
+                  请先登录后使用 AI 聊天功能。
+                  <a href="/login" className="ml-2 font-semibold underline">
+                    去登录
+                  </a>
+                </div>
+              )}
+
               <div className="flex gap-3">
-                <textarea
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                  className="min-h-14 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
-                  placeholder="输入你的问题，比如：帮我写一篇小红书文案..."
-                />
+               <textarea
+                 value={input}
+                 onChange={(event) => setInput(event.target.value)}
+                 onKeyDown={(event) => {
+                   if (event.key === "Enter" && !event.shiftKey) {
+                     event.preventDefault();
+                     sendMessage();
+                   }
+                 }}
+                 disabled={!userEmail || loading}
+                 className="min-h-14 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                 placeholder={
+                   userEmail
+                     ? "输入你的问题，比如：帮我写一篇小红书文案..."
+                     : "请先登录后使用聊天功能"
+                 }
+               />
                 <button
                   onClick={sendMessage}
-                  disabled={loading}
+                  disabled={!userEmail || loading}
                   className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? "思考中" : "发送"}
+                  {loading ? "思考中" : userEmail ? "发送" : "请先登录"}
                 </button>
               </div>
 
