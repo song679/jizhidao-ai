@@ -10,11 +10,19 @@ export async function POST(request: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
     const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
-        { error: "服务器未配置 Supabase 环境变量" },
+        { error: "服务器未配置 Supabase 公开环境变量" },
+        { status: 500 }
+      );
+    }
+
+    if (!supabaseSecretKey) {
+      return NextResponse.json(
+        { error: "服务器未配置 SUPABASE_SECRET_KEY" },
         { status: 500 }
       );
     }
@@ -37,17 +45,61 @@ export async function POST(request: Request) {
 
     const accessToken = authorization.replace("Bearer ", "");
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser(accessToken);
+    } = await supabaseAuth.auth.getUser(accessToken);
 
     if (userError || !user) {
       return NextResponse.json(
         { error: "登录状态无效，请重新登录" },
         { status: 401 }
+      );
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
+
+    const { data: existingPoints, error: pointsQueryError } =
+      await supabaseAdmin
+        .from("user_points")
+        .select("id, email, points")
+        .eq("id", user.id)
+        .single();
+
+    if (pointsQueryError && pointsQueryError.code !== "PGRST116") {
+      return NextResponse.json(
+        { error: "查询用户点数失败", detail: pointsQueryError.message },
+        { status: 500 }
+      );
+    }
+
+    let currentPoints = existingPoints?.points ?? 1000;
+
+    if (!existingPoints) {
+      const { error: insertError } = await supabaseAdmin
+        .from("user_points")
+        .insert({
+          id: user.id,
+          email: user.email,
+          points: 1000,
+        });
+
+      if (insertError) {
+        return NextResponse.json(
+          { error: "初始化用户点数失败", detail: insertError.message },
+          { status: 500 }
+        );
+      }
+
+      currentPoints = 1000;
+    }
+
+    if (currentPoints <= 0) {
+      return NextResponse.json(
+        { error: "点数不足，请充值后继续使用" },
+        { status: 402 }
       );
     }
 
@@ -142,7 +194,22 @@ export async function POST(request: Request) {
     const reply =
       data?.choices?.[0]?.message?.content || "抱歉，我暂时没有生成回复。";
 
-    return NextResponse.json({ reply });
+    const { error: updateError } = await supabaseAdmin
+      .from("user_points")
+      .update({
+        points: currentPoints - 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("扣点失败：", updateError.message);
+    }
+
+    return NextResponse.json({
+      reply,
+      points: currentPoints - 1,
+    });
   } catch (error) {
     console.error("Chat API Error:", error);
 
