@@ -23,6 +23,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [userEmail, setUserEmail] = useState("");
+  const [points, setPoints] = useState<number>(1000);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,14 +31,24 @@ export default function ChatPage() {
   
   useEffect(() => {
   async function getUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user?.email) {
-      setUserEmail(user.email);
+  if (user?.email) {
+    setUserEmail(user.email);
+
+    const { data } = await supabase
+      .from("user_points")
+      .select("points")
+      .eq("id", user.id)
+      .single();
+
+    if (typeof data?.points === "number") {
+      setPoints(data.points);
     }
   }
+}
 
   getUser();
 
@@ -117,6 +128,10 @@ async function logout() {
 
       if (!response.ok) {
         throw new Error(data?.detail || data?.error || "请求失败");
+      }
+
+      if (typeof data.points === "number") {
+        setPoints(data.points);
       }
 
       setMessages([
@@ -203,7 +218,7 @@ async function logout() {
 
             <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4">
               <div className="text-sm text-slate-400">剩余点数</div>
-              <div className="mt-2 text-3xl font-bold text-cyan-300">1000</div>
+              <div className="mt-2 text-3xl font-bold text-cyan-300">{points}</div>
               <div className="mt-1 text-xs text-slate-500">测试账户赠送</div>
             </div>
           </aside>
