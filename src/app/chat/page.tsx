@@ -11,13 +11,15 @@ type Message = {
 };
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "你好，我是极智岛 AI。你可以问我写作、办公、电商、短视频、学习、代码等问题。",
-    },
-  ]);
+       const defaultMessages: Message[] = [
+       {
+         role: "assistant",
+         content:
+           "你好，我是极智岛 AI。你可以问我写作、办公、电商、短视频、学习、代码等问题。",
+       },
+     ];
+
+  const [messages, setMessages] = useState<Message[]>(defaultMessages);
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,29 @@ export default function ChatPage() {
 
   setUserEmail(data.email || session.user.email || "");
   setPoints(typeof data.points === "number" ? data.points : 0);
+
+        const historyResponse = await fetch("/api/chat/history", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const historyData = await historyResponse.json();
+
+      if (historyResponse.ok && Array.isArray(historyData.messages)) {
+        const loadedMessages = historyData.messages.filter(
+          (item: Message) =>
+            (item.role === "user" || item.role === "assistant") &&
+            typeof item.content === "string"
+        );
+
+        if (loadedMessages.length > 0) {
+          setMessages(loadedMessages);
+        } else {
+          setMessages(defaultMessages);
+       }
+     }
 }
 
   getUser();
