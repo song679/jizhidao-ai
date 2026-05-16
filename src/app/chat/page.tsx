@@ -32,22 +32,31 @@ export default function ChatPage() {
   useEffect(() => {
   async function getUser() {
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (user?.email) {
-    setUserEmail(user.email);
-
-    const { data } = await supabase
-      .from("user_points")
-      .select("points")
-      .eq("id", user.id)
-      .single();
-
-    if (typeof data?.points === "number") {
-      setPoints(data.points);
-    }
+  if (!session) {
+    setUserEmail("");
+    return;
   }
+
+  const response = await fetch("/api/points", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(data);
+    setUserEmail(session.user.email || "");
+    return;
+  }
+
+  setUserEmail(data.email || session.user.email || "");
+  setPoints(typeof data.points === "number" ? data.points : 0);
 }
 
   getUser();
