@@ -375,7 +375,7 @@ async function logout() {
             </div>
           </aside>
 
-          <section className="flex min-h-[75vh] flex-col rounded-3xl border border-slate-800 bg-slate-900/60">
+          <section className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60">
             <div className="border-b border-slate-800 p-5">
               <h1 className="text-xl font-bold">{activeTool}</h1>
               <p className="mt-1 text-sm text-slate-400">
@@ -383,7 +383,7 @@ async function logout() {
               </p>
             </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -429,7 +429,7 @@ async function logout() {
               <div ref={bottomRef} />
             </div>
 
-            <div className="border-t border-slate-800 p-5">
+            <div className="border-t border-slate-800 bg-slate-900/80 p-5">
               {!userEmail && (
                 <div className="mb-4 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
                   请先登录后使用 AI 聊天功能。
