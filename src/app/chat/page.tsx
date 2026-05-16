@@ -85,6 +85,17 @@ async function logout() {
     return;
   }
 
+   if (points <= 0) {
+    setMessages([
+      ...messages,
+      {
+        role: "assistant",
+        content: "你的点数已用完，请充值后继续使用 AI 聊天功能。",
+      },
+    ]);
+    return;
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -297,25 +308,31 @@ async function logout() {
                      sendMessage();
                    }
                  }}
-                 disabled={!userEmail || loading}
+                 disabled={!userEmail || loading || points <= 0}
                  className="min-h-14 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
                  placeholder={
-                   userEmail
-                     ? "输入你的问题，比如：帮我写一篇小红书文案..."
-                     : "请先登录后使用聊天功能"
+                   !userEmail
+                     ? "请先登录后使用聊天功能"
+                     : points <= 0
+                       ? "点数不足，请充值后继续使用"
+                       : "输入你的问题，比如：帮我写一篇小红书文案..."
                  }
                />
                 <button
                   onClick={sendMessage}
-                  disabled={!userEmail || loading}
+                  disabled={!userEmail || loading || points <= 0}
                   className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? "思考中" : userEmail ? "发送" : "请先登录"}
+                  {loading ? "思考中..." : !userEmail ? "请先登录" : points <= 0 ? "点数不足" : "发送"}
                 </button>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                当前已接入 DeepSeek 模型，测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。
+                {!userEmail
+                  ? "请先登录后使用 AI 聊天功能。"
+                  : points <= 0
+                    ? "点数已用完，请充值后继续使用 AI 聊天功能。"
+                    : "当前已接入 DeepSeek 模型，测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。"}
               </p>
             </div>
           </section>
