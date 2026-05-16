@@ -90,7 +90,7 @@ async function logout() {
       ...messages,
       {
         role: "assistant",
-        content: "你的点数已用完，请充值后继续使用 AI 聊天功能。",
+        content: "你的点数已用完，请前往 [会员价格页](/pricing) 充值后继续使用 AI 聊天功能。",
       },
     ]);
     return;
@@ -182,6 +182,14 @@ async function logout() {
             <button className="rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-900">
               当前模型：DeepSeek
             </button>
+
+            <a
+              href="/pricing"
+              className="rounded-full border border-cyan-400/30 px-5 py-3 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10"
+            >
+              充值 / 会员
+            </a>
+
             {userEmail ? (
               <div className="flex items-center gap-3">
                 <span className="hidden text-sm text-slate-300 md:inline">
@@ -231,6 +239,12 @@ async function logout() {
               <div className="text-sm text-slate-400">剩余点数</div>
               <div className="mt-2 text-3xl font-bold text-cyan-300">{points}</div>
               <div className="mt-1 text-xs text-slate-500">测试账户赠送</div>
+              <a
+                href="/pricing"
+                className="mt-3 inline-block text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+              >
+                充值点数 →
+              </a>
             </div>
           </aside>
 
@@ -314,7 +328,7 @@ async function logout() {
                    !userEmail
                      ? "请先登录后使用聊天功能"
                      : points <= 0
-                       ? "点数不足，请充值后继续使用"
+                       ? "点数已用完，请点击上方或左侧的充值入口继续使用。"
                        : "输入你的问题，比如：帮我写一篇小红书文案..."
                  }
                />
