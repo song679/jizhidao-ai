@@ -28,10 +28,10 @@ export default function Home() {
         <header className="flex items-center justify-between">
           <div className="text-2xl font-bold tracking-tight">极智岛 AI</div>
           <nav className="hidden gap-6 text-sm text-slate-300 md:flex">
-            <a href="#" className="hover:text-white">AI聊天</a>
+            <a href="/chat" className="hover:text-white">AI聊天</a>
             <a href="#" className="hover:text-white">写作助手</a>
             <a href="#" className="hover:text-white">AI工具</a>
-            <a href="#" className="hover:text-white">会员价格</a>
+            <a href="/pricing" className="hover:text-white">会员价格</a>
           </nav>
           <a
            href="/login"
@@ -65,10 +65,10 @@ export default function Home() {
                  立即体验
               </a>
               <a
-                href="/chat"
-               className="rounded-full border border-slate-700 px-7 py-3 font-semibold text-white hover:bg-slate-900"
-               >
-                查看AI工具
+                href="/pricing"
+                className="rounded-full border border-slate-700 px-7 py-3 font-semibold text-white hover:bg-slate-800"
+              >
+                会员价格
               </a>
             </div>
 
