@@ -43,9 +43,10 @@ export default function LoginPage() {
         </a>
 
         <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl">
-          <h1 className="text-2xl font-bold">登录 / 注册</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            输入邮箱后，我们会发送一个登录链接。新用户首次登录即自动注册。
+          <h1 className="text-3xl font-bold">登录 / 注册</h1>
+
+          <p className="mt-4 text-sm leading-7 text-slate-400">
+          无需密码，输入邮箱即可收到安全登录链接。新用户首次登录会自动创建账号，并赠送 1000 点测试点数。
           </p>
 
           <div className="mt-8">
@@ -74,6 +75,16 @@ export default function LoginPage() {
               {message}
             </div>
           )}
+
+          <div className="mt-6 flex items-center justify-center gap-4 text-sm">
+            <a href="/" className="text-slate-400 hover:text-white">
+              返回首页
+            </a>
+            <span className="text-slate-700">|</span>
+            <a href="/chat" className="text-cyan-300 hover:text-cyan-200">
+              进入 AI 聊天
+            </a>
+          </div>
 
           <p className="mt-6 text-xs leading-5 text-slate-500">
             目前为测试阶段。请使用真实可收信邮箱登录。
