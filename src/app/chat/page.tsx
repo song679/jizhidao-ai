@@ -245,6 +245,12 @@ async function logout() {
               >
                 充值点数 →
               </a>
+              <a
+                 href="/points"
+               className="mt-2 inline-block text-xs font-semibold text-slate-400 hover:text-white"
+             >
+               点数明细 →
+              </a>
             </div>
           </aside>
 
