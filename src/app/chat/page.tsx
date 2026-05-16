@@ -96,6 +96,10 @@ async function logout() {
   window.location.href = "/login";
 }
 
+      function usePromptTemplate(template: string) {
+      setInput(template);
+}
+
   async function sendMessage() {
   const userText = input.trim();
 
@@ -248,18 +252,49 @@ async function logout() {
               <button className="w-full rounded-2xl bg-cyan-400 px-4 py-3 text-left font-semibold text-slate-950">
                 AI 聊天
               </button>
-              <button className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800">
-                写文章
-              </button>
-              <button className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800">
-                小红书文案
-              </button>
-              <button className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800">
-                电商标题
-              </button>
-              <button className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800">
-                短视频脚本
-              </button>
+              <button
+              onClick={() =>
+                usePromptTemplate(
+                  "帮我写一篇文章，主题是：____。要求：结构清晰、语言通俗、适合普通用户阅读，字数控制在 800 字左右。"
+                )
+              }
+              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+            >
+              写文章
+            </button>
+
+            <button
+              onClick={() =>
+                usePromptTemplate(
+                  "帮我写一篇小红书文案，产品/主题是：____。要求：标题吸引人，正文像真人分享，带 3-5 个 emoji，最后加几个相关话题标签。"
+                )
+              }
+              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+            >
+              小红书文案
+            </button>
+
+            <button
+              onClick={() =>
+                usePromptTemplate(
+                  "帮我生成 10 个电商商品标题，产品是：____。要求：突出卖点，适合电商平台搜索，标题简洁有吸引力。"
+                )
+              }
+              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+            >
+              电商标题
+            </button>
+
+            <button
+              onClick={() =>
+                usePromptTemplate(
+                  "帮我写一个短视频脚本，主题是：____。要求：包含开头钩子、分镜内容、口播文案和结尾引导，时长控制在 60 秒左右。"
+                )
+              }
+              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+            >
+              短视频脚本
+            </button>
             </div>
 
             <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4">
