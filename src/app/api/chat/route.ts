@@ -103,14 +103,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const { messages } = await request.json();
+      const { messages } = await request.json();
 
-    if (!Array.isArray(messages)) {
-      return NextResponse.json(
-        { error: "messages 参数格式不正确" },
-        { status: 400 }
-      );
-    }
+      if (!Array.isArray(messages)) {
+        return NextResponse.json(
+          { error: "messages 参数格式不正确" },
+          { status: 400 }
+        );
+      }
+
+      const userMessage =
+        messages
+          .filter((item: { role: string; content: string }) => item.role === "user")
+          .at(-1)?.content || "";
 
     const safeMessages: ChatMessage[] = messages
       .filter(
@@ -193,6 +198,32 @@ export async function POST(request: Request) {
 
     const reply =
       data?.choices?.[0]?.message?.content || "抱歉，我暂时没有生成回复。";
+
+      const { error: userMessageError } = await supabaseAdmin
+        .from("chat_messages")
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          role: "user",
+          content: userMessage,
+        });
+
+      if (userMessageError) {
+        console.error("保存用户消息失败：", userMessageError.message);
+      }
+
+      const { error: assistantMessageError } = await supabaseAdmin
+        .from("chat_messages")
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          role: "assistant",
+          content: reply,
+        });
+
+      if (assistantMessageError) {
+        console.error("保存 AI 回复失败：", assistantMessageError.message);
+      }
 
     const newPoints = currentPoints - 1;
 
