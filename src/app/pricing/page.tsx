@@ -41,6 +41,9 @@ export default function PricingPage() {
             <a href="/pricing" className="text-cyan-300">
               会员价格
             </a>
+            <a href="/points" className="hover:text-white">
+              点数明细
+            </a>
           </nav>
         </header>
 
