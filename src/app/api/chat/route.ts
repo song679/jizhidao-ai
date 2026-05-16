@@ -194,22 +194,45 @@ export async function POST(request: Request) {
     const reply =
       data?.choices?.[0]?.message?.content || "抱歉，我暂时没有生成回复。";
 
-    const { error: updateError } = await supabaseAdmin
-      .from("user_points")
-      .update({
-        points: currentPoints - 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+    const newPoints = currentPoints - 1;
 
-    if (updateError) {
-      console.error("扣点失败：", updateError.message);
-    }
+const { error: updateError } = await supabaseAdmin
+  .from("user_points")
+  .update({
+    points: newPoints,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("id", user.id);
 
-    return NextResponse.json({
-      reply,
-      points: currentPoints - 1,
-    });
+if (updateError) {
+  console.error("扣点失败：", updateError.message);
+
+  return NextResponse.json(
+    { error: "扣除点数失败，请稍后再试" },
+    { status: 500 }
+  );
+}
+
+const { error: transactionError } = await supabaseAdmin
+  .from("point_transactions")
+  .insert({
+    user_id: user.id,
+    email: user.email,
+    change_amount: -1,
+    balance_after: newPoints,
+    type: "chat",
+    description: "AI 聊天扣除 1 点",
+  });
+
+if (transactionError) {
+  console.error("写入点数流水失败：", transactionError.message);
+}
+
+return NextResponse.json({
+  reply,
+  points: newPoints,
+});
+
   } catch (error) {
     console.error("Chat API Error:", error);
 
