@@ -72,6 +72,24 @@ export default function ChatPage() {
   };
 }, []);
 
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const welcome = params.get("welcome");
+
+  if (welcome === "1") {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "欢迎回来！新用户已赠送 1000 点，可直接开始使用 AI 聊天、写作、办公、电商文案等功能。",
+      },
+    ]);
+
+    window.history.replaceState({}, "", "/chat");
+  }
+}, []);
+
 async function logout() {
   await supabase.auth.signOut();
   setUserEmail("");
