@@ -24,6 +24,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [points, setPoints] = useState<number>(1000);
+  const [activeTool, setActiveTool] = useState("AI 聊天");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -96,9 +97,10 @@ async function logout() {
   window.location.href = "/login";
 }
 
-      function usePromptTemplate(template: string) {
-      setInput(template);
-}
+      function usePromptTemplate(toolName: string, template: string) {
+        setActiveTool(toolName);
+        setInput(template);
+      }
 
   async function sendMessage() {
   const userText = input.trim();
@@ -249,27 +251,48 @@ async function logout() {
             <h2 className="mb-4 text-lg font-semibold">AI 功能</h2>
 
             <div className="space-y-3 text-sm">
-              <button className="w-full rounded-2xl bg-cyan-400 px-4 py-3 text-left font-semibold text-slate-950">
+              <button
+                onClick={() => {
+                  setActiveTool("AI 聊天");
+                  setInput("");
+                }}
+                className={`w-full rounded-2xl px-4 py-3 text-left font-semibold ${
+                  activeTool === "AI 聊天"
+                    ? "bg-cyan-400 text-slate-950"
+                    : "text-slate-300 hover:bg-slate-800"
+                }`}
+              >
                 AI 聊天
               </button>
+
               <button
-              onClick={() =>
-                usePromptTemplate(
-                  "帮我写一篇文章，主题是：____。要求：结构清晰、语言通俗、适合普通用户阅读，字数控制在 800 字左右。"
-                )
-              }
-              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
-            >
-              写文章
-            </button>
+                onClick={() =>
+                  usePromptTemplate(
+                    "写文章",
+                    "帮我写一篇文章，主题是：____。要求：结构清晰、语言通俗、适合普通用户阅读，字数控制在 800 字左右。"
+                  )
+                }
+                className={`w-full rounded-2xl px-4 py-3 text-left font-semibold ${
+                  activeTool === "写文章"
+                    ? "bg-cyan-400 text-slate-950"
+                    : "text-slate-300 hover:bg-slate-800"
+                }`}
+              >
+                写文章
+              </button>
 
             <button
               onClick={() =>
                 usePromptTemplate(
+                  "小红书文案",
                   "帮我写一篇小红书文案，产品/主题是：____。要求：标题吸引人，正文像真人分享，带 3-5 个 emoji，最后加几个相关话题标签。"
                 )
               }
-              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+              className={`w-full rounded-2xl px-4 py-3 text-left font-semibold ${
+                activeTool === "小红书文案"
+                  ? "bg-cyan-400 text-slate-950"
+                  : "text-slate-300 hover:bg-slate-800"
+              }`}
             >
               小红书文案
             </button>
@@ -277,10 +300,15 @@ async function logout() {
             <button
               onClick={() =>
                 usePromptTemplate(
+                  "电商标题",
                   "帮我生成 10 个电商商品标题，产品是：____。要求：突出卖点，适合电商平台搜索，标题简洁有吸引力。"
                 )
               }
-              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+              className={`w-full rounded-2xl px-4 py-3 text-left font-semibold ${
+                activeTool === "电商标题"
+                  ? "bg-cyan-400 text-slate-950"
+                  : "text-slate-300 hover:bg-slate-800"
+              }`}
             >
               电商标题
             </button>
@@ -288,13 +316,19 @@ async function logout() {
             <button
               onClick={() =>
                 usePromptTemplate(
+                  "短视频脚本",
                   "帮我写一个短视频脚本，主题是：____。要求：包含开头钩子、分镜内容、口播文案和结尾引导，时长控制在 60 秒左右。"
                 )
               }
-              className="w-full rounded-2xl px-4 py-3 text-left text-slate-300 hover:bg-slate-800"
+              className={`w-full rounded-2xl px-4 py-3 text-left font-semibold ${
+                activeTool === "短视频脚本"
+                  ? "bg-cyan-400 text-slate-950"
+                  : "text-slate-300 hover:bg-slate-800"
+              }`}
             >
               短视频脚本
             </button>
+
             </div>
 
             <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4">
@@ -318,7 +352,7 @@ async function logout() {
 
           <section className="flex min-h-[75vh] flex-col rounded-3xl border border-slate-800 bg-slate-900/60">
             <div className="border-b border-slate-800 p-5">
-              <h1 className="text-xl font-bold">AI 聊天</h1>
+              <h1 className="text-xl font-bold">{activeTool}</h1>
               <p className="mt-1 text-sm text-slate-400">
                 支持日常聊天、写作、办公、电商、短视频内容创作。
               </p>
