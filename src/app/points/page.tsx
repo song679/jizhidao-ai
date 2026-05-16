@@ -19,36 +19,34 @@ export default function PointsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadPoints() {
+        async function loadPoints() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (!user) {
+      if (!session) {
         window.location.href = "/login";
         return;
       }
 
-      setUserEmail(user.email || "");
+      const response = await fetch("/api/points", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-      const { data: pointsData } = await supabase
-        .from("user_points")
-        .select("points")
-        .eq("id", user.id)
-        .single();
+      const data = await response.json();
 
-      if (typeof pointsData?.points === "number") {
-        setPoints(pointsData.points);
+      if (!response.ok) {
+        console.error(data);
+        setLoading(false);
+        return;
       }
 
-      const { data: transactionData } = await supabase
-        .from("point_transactions")
-        .select("id, change_amount, balance_after, type, description, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(30);
-
-      setTransactions(transactionData || []);
+      setUserEmail(data.email || "");
+      setPoints(typeof data.points === "number" ? data.points : 0);
+      setTransactions(data.transactions || []);
       setLoading(false);
     }
 
