@@ -127,6 +127,40 @@ async function logout() {
         setInput(template);
       }
 
+    async function clearChatHistory() {
+  const confirmed = window.confirm("确定要清空聊天记录吗？清空后无法恢复。");
+
+  if (!confirmed) {
+    return;
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    window.location.href = "/login";
+    return;
+  }
+
+  const response = await fetch("/api/chat/history", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(data);
+    alert(data?.error || "清空聊天记录失败");
+    return;
+  }
+
+  setMessages(defaultMessages);
+}
+
   async function sendMessage() {
   const userText = input.trim();
 
@@ -376,11 +410,20 @@ async function logout() {
           </aside>
 
           <section className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60">
-            <div className="border-b border-slate-800 p-5">
-              <h1 className="text-xl font-bold">{activeTool}</h1>
-              <p className="mt-1 text-sm text-slate-400">
-                支持日常聊天、写作、办公、电商、短视频内容创作。
-              </p>
+            <div className="flex items-center justify-between border-b border-slate-800 p-5">
+              <div>
+                <h1 className="text-xl font-bold">{activeTool}</h1>
+                <p className="mt-1 text-sm text-slate-400">
+                  支持日常聊天、写作、办公、电商、短视频内容创作。
+                </p>
+              </div>
+
+              <button
+                onClick={clearChatHistory}
+                className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 hover:border-red-400/60 hover:text-red-300"
+              >
+                清空记录
+              </button>
             </div>
 
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
