@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       );
     }
 
-      const { messages } = await request.json();
+      const { messages, sessionId } = await request.json();
 
       if (!Array.isArray(messages)) {
         return NextResponse.json(
@@ -111,6 +111,11 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+
+      const chatSessionId =
+        typeof sessionId === "string" && sessionId.trim()
+          ? sessionId.trim()
+          : null;
 
       const userMessage =
         messages
@@ -206,6 +211,7 @@ export async function POST(request: Request) {
           email: user.email,
           role: "user",
           content: userMessage,
+          session_id: chatSessionId,
         });
 
       if (userMessageError) {
@@ -219,10 +225,41 @@ export async function POST(request: Request) {
           email: user.email,
           role: "assistant",
           content: reply,
+          session_id: chatSessionId,
         });
 
       if (assistantMessageError) {
         console.error("保存 AI 回复失败：", assistantMessageError.message);
+      }
+
+      if (chatSessionId) {
+        const titleFromMessage =
+          userMessage.length > 20 ? `${userMessage.slice(0, 20)}...` : userMessage;
+
+        const { data: currentSession } = await supabaseAdmin
+          .from("chat_sessions")
+          .select("title")
+          .eq("id", chatSessionId)
+          .eq("user_id", user.id)
+          .single();
+
+        const nextTitle =
+          currentSession?.title === "新聊天" && titleFromMessage
+            ? titleFromMessage
+            : currentSession?.title || "新聊天";
+
+        const { error: sessionUpdateError } = await supabaseAdmin
+          .from("chat_sessions")
+          .update({
+            title: nextTitle,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", chatSessionId)
+          .eq("user_id", user.id);
+
+        if (sessionUpdateError) {
+          console.error("更新聊天会话失败：", sessionUpdateError.message);
+        }
       }
 
     const newPoints = currentPoints - 1;
@@ -262,6 +299,7 @@ if (transactionError) {
 return NextResponse.json({
   reply,
   points: newPoints,
+  sessionId: chatSessionId,
 });
 
   } catch (error) {

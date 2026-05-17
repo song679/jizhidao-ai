@@ -48,10 +48,19 @@ export async function GET(request: Request) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
 
-    const { data: messages, error: messagesError } = await supabaseAdmin
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get("session_id");
+
+    let query = supabaseAdmin
       .from("chat_messages")
       .select("role, content, created_at")
-      .eq("user_id", user.id)
+      .eq("user_id", user.id);
+
+    if (sessionId) {
+      query = query.eq("session_id", sessionId);
+    }
+
+    const { data: messages, error: messagesError } = await query
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -129,10 +138,19 @@ export async function DELETE(request: Request) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
 
-    const { error: deleteError } = await supabaseAdmin
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get("session_id");
+
+    let deleteQuery = supabaseAdmin
       .from("chat_messages")
       .delete()
       .eq("user_id", user.id);
+
+    if (sessionId) {
+      deleteQuery = deleteQuery.eq("session_id", sessionId);
+    }
+
+    const { error: deleteError } = await deleteQuery;
 
     if (deleteError) {
       return NextResponse.json(

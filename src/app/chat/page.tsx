@@ -10,6 +10,13 @@ type Message = {
   content: string;
 };
 
+type ChatSession = {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export default function ChatPage() {
        const defaultMessages: Message[] = [
        {
@@ -27,6 +34,9 @@ export default function ChatPage() {
   const [userEmail, setUserEmail] = useState("");
   const [points, setPoints] = useState<number>(1000);
   const [activeTool, setActiveTool] = useState("AI 聊天");
+
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,28 +71,15 @@ export default function ChatPage() {
   setUserEmail(data.email || session.user.email || "");
   setPoints(typeof data.points === "number" ? data.points : 0);
 
-        const historyResponse = await fetch("/api/chat/history", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+        const sessionList = await fetchSessions(session.access_token);
 
-      const historyData = await historyResponse.json();
-
-      if (historyResponse.ok && Array.isArray(historyData.messages)) {
-        const loadedMessages = historyData.messages.filter(
-          (item: Message) =>
-            (item.role === "user" || item.role === "assistant") &&
-            typeof item.content === "string"
-        );
-
-        if (loadedMessages.length > 0) {
-          setMessages(loadedMessages);
+        if (sessionList.length > 0) {
+          const firstSession = sessionList[0];
+          setCurrentSessionId(firstSession.id);
+          await loadSessionMessages(firstSession.id);
         } else {
-          setMessages(defaultMessages);
-       }
-     }
+          await createChatSession(session.access_token);
+        }
 }
 
   getUser();
@@ -127,10 +124,106 @@ async function logout() {
         setInput(template);
       }
 
-    function startNewChat() {
-  setMessages(defaultMessages);
-  setInput("");
-  setActiveTool("AI 聊天");
+    async function fetchSessions(accessToken: string) {
+      const response = await fetch("/api/chat/sessions", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && Array.isArray(data.sessions)) {
+        setSessions(data.sessions);
+        return data.sessions as ChatSession[];
+      }
+
+      console.error(data);
+      return [];
+    }
+
+    async function createChatSession(accessToken: string) {
+      const response = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "新聊天",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(data);
+        alert(data?.error || "创建新聊天失败");
+        return null;
+      }
+
+      const newSession = data.session as ChatSession;
+
+      setSessions((prev) => [newSession, ...prev]);
+      setCurrentSessionId(newSession.id);
+      setMessages(defaultMessages);
+      setInput("");
+      setActiveTool("AI 聊天");
+
+      return newSession;
+    }
+
+    async function loadSessionMessages(sessionId: string) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch(`/api/chat/history?session_id=${sessionId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(data);
+        alert(data?.error || "加载聊天记录失败");
+        return;
+      }
+
+      const loadedMessages = Array.isArray(data.messages)
+        ? data.messages.filter(
+            (item: Message) =>
+              (item.role === "user" || item.role === "assistant") &&
+              typeof item.content === "string"
+          )
+        : [];
+
+      setCurrentSessionId(sessionId);
+      setMessages(loadedMessages.length > 0 ? loadedMessages : defaultMessages);
+      setInput("");
+      setActiveTool("AI 聊天");
+    }
+
+    async function startNewChat() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+  if (!session) {
+    window.location.href = "/login";
+    return;
+  }
+
+  await createChatSession(session.access_token);
 }
 
     async function clearChatHistory() {
@@ -222,16 +315,26 @@ async function logout() {
     setLoading(true);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.href = "/login";
+        return;
+      }
+
       const response = await fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${session.access_token}`,
-  },
-  body: JSON.stringify({
-    messages: newMessages,
-  }),
-});
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+          sessionId: currentSessionId,
+        }),
+      });
 
       const data = await response.json();
 
@@ -241,6 +344,18 @@ async function logout() {
 
       if (typeof data.points === "number") {
         setPoints(data.points);
+      }
+
+      if (data.sessionId && !currentSessionId) {
+        setCurrentSessionId(data.sessionId);
+      }
+
+      const {
+        data: { session: latestSession },
+      } = await supabase.auth.getSession();
+
+      if (latestSession) {
+        await fetchSessions(latestSession.access_token);
       }
 
       setMessages([
@@ -413,6 +528,40 @@ async function logout() {
                点数明细 →
               </a>
             </div>
+
+          <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-semibold text-slate-300">历史会话</div>
+              <button
+                onClick={startNewChat}
+                className="text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+              >
+                新建
+              </button>
+            </div>
+
+            <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+              {sessions.length === 0 ? (
+                <div className="text-xs text-slate-500">暂无历史会话</div>
+              ) : (
+                sessions.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => loadSessionMessages(item.id)}
+                    className={`w-full truncate rounded-xl px-3 py-2 text-left text-xs ${
+                      currentSessionId === item.id
+                        ? "bg-cyan-400 text-slate-950"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    }`}
+                    title={item.title}
+                  >
+                    {item.title}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
           </aside>
 
           <section className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60">
