@@ -127,6 +127,12 @@ async function logout() {
         setInput(template);
       }
 
+    function startNewChat() {
+  setMessages(defaultMessages);
+  setInput("");
+  setActiveTool("AI 聊天");
+}
+
     async function clearChatHistory() {
   const confirmed = window.confirm("确定要清空聊天记录吗？清空后无法恢复。");
 
@@ -418,12 +424,21 @@ async function logout() {
                 </p>
               </div>
 
-              <button
-                onClick={clearChatHistory}
-                className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 hover:border-red-400/60 hover:text-red-300"
-              >
-                清空记录
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={startNewChat}
+                  className="rounded-full border border-cyan-400/40 px-4 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-400/10"
+                >
+                  新聊天
+                </button>
+
+                <button
+                  onClick={clearChatHistory}
+                  className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 hover:border-red-400/60 hover:text-red-300"
+                >
+                  清空记录
+                </button>
+              </div>
             </div>
 
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
