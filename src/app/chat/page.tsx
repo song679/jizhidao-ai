@@ -387,38 +387,51 @@ async function logout() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-6">
         <header className="mb-6 flex items-center justify-between border-b border-slate-800 pb-5">
-          <a href="/" className="text-2xl font-bold">
+          <a href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
           </a>
 
+          <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
+            <a href="/chat" className="text-cyan-300">
+              AI聊天
+            </a>
+            <a href="/pricing" className="hover:text-white">
+              会员价格
+            </a>
+            <a href="/points" className="hover:text-white">
+              点数明细
+            </a>
+          </nav>
+
           <div className="flex items-center gap-3">
-            <button className="rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-900">
-              当前模型：DeepSeek
-            </button>
+            <div className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 md:block">
+              当前模型：<span className="font-semibold text-white">DeepSeek</span>
+            </div>
 
             <a
               href="/pricing"
-              className="rounded-full border border-cyan-400/30 px-5 py-3 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10"
+              className="rounded-full border border-cyan-400/40 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10"
             >
               充值 / 会员
             </a>
 
+            {userEmail && (
+              <span className="hidden text-sm text-slate-300 lg:inline">
+                {userEmail}
+              </span>
+            )}
+
             {userEmail ? (
-              <div className="flex items-center gap-3">
-                <span className="hidden text-sm text-slate-300 md:inline">
-                  {userEmail}
-                </span>
-                <button
-                  onClick={logout}
-                  className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950"
-                >
-                  退出登录
-                </button>
-              </div>
+              <button
+                onClick={logout}
+                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
+              >
+                退出登录
+              </button>
             ) : (
               <a
                 href="/login"
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950"
+                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
               >
                 登录 / 注册
               </a>
