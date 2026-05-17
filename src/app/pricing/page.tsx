@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function PricingPage() {
   const [userEmail, setUserEmail] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     async function getUser() {
@@ -27,6 +28,12 @@ export default function PricingPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  function handlePlanClick(planName: string) {
+   setNotice(
+     `你选择了「${planName}」。当前为测试阶段，暂未接入在线支付。如需充值，请联系管理员处理。`
+   );
+ }
 
   const plans = [
     {
@@ -112,6 +119,13 @@ export default function PricingPage() {
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
             极智岛 AI 使用点数计费。测试阶段套餐仅作展示，后续将接入正式支付系统。
           </p>
+
+          {notice && (
+            <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-5 py-4 text-sm leading-6 text-cyan-100">
+              {notice}
+            </div>
+          )}
+
         </section>
 
         <section className="grid gap-6 md:grid-cols-3">
@@ -150,14 +164,14 @@ export default function PricingPage() {
               </ul>
 
               <button
-                disabled
+                onClick={() => handlePlanClick(plan.name)}
                 className={`mt-8 w-full rounded-2xl px-5 py-4 font-bold ${
                   plan.highlight
-                    ? "bg-cyan-400 text-slate-950"
-                    : "bg-slate-800 text-white"
-                } opacity-70`}
+                    ? "bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+                    : "border border-slate-700 text-white hover:border-cyan-400/60 hover:text-cyan-300"
+                }`}
               >
-                暂未开放支付
+                选择套餐
               </button>
             </div>
           ))}
