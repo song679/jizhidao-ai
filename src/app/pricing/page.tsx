@@ -1,4 +1,33 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
 export default function PricingPage() {
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      setUserEmail(session?.user?.email || "");
+    }
+
+    getUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email || "");
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const plans = [
     {
       name: "体验包",
@@ -30,11 +59,11 @@ export default function PricingPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-6xl px-6 py-10">
         <header className="flex items-center justify-between border-b border-slate-800 pb-6">
-          <a href="/" className="text-2xl font-bold">
+          <a href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
           </a>
 
-          <nav className="flex items-center gap-6 text-sm text-slate-300">
+          <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
             <a href="/chat" className="hover:text-white">
               AI聊天
             </a>
@@ -45,6 +74,30 @@ export default function PricingPage() {
               点数明细
             </a>
           </nav>
+
+          {userEmail ? (
+            <div className="flex items-center gap-3">
+              <a
+                href="/points"
+                className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 md:inline-block"
+              >
+                点数明细
+              </a>
+              <a
+                href="/chat"
+                className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+              >
+                进入 AI 聊天
+              </a>
+            </div>
+          ) : (
+            <a
+              href="/login"
+              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
+            >
+              登录 / 注册
+            </a>
+          )}
         </header>
 
         <section className="py-16 text-center">
