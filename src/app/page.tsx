@@ -1,4 +1,33 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
 export default function Home() {
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      setUserEmail(session?.user?.email || "");
+    }
+
+    getUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email || "");
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const features = [
     {
       name: "AI 聊天",
@@ -52,12 +81,21 @@ export default function Home() {
             </a>
           </nav>
 
-          <a
-            href="/login"
-            className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
-          >
-            登录 / 注册
-          </a>
+          {userEmail ? (
+            <a
+              href="/chat"
+              className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+            >
+              进入 AI 聊天
+            </a>
+          ) : (
+            <a
+              href="/login"
+              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
+            >
+              登录 / 注册
+            </a>
+          )}
         </header>
 
         <section className="grid flex-1 items-center gap-12 py-10 md:grid-cols-[1.05fr_0.95fr]">
