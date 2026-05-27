@@ -19,17 +19,23 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/chat?welcome=1`,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: userEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/chat?welcome=1`,
+        },
+      });
 
-    if (error) {
-      setMessage(`发送失败：${error.message}`);
-    } else {
-      setMessage("登录链接已发送到你的邮箱，请打开邮箱点击链接登录。");
+      if (error) {
+        setMessage(`发送失败：${error.message}`);
+      } else {
+        setMessage("登录链接已发送到你的邮箱，请打开邮箱点击链接登录。");
+      }
+    } catch {
+      setMessage(
+        "发送失败：当前网络无法连接 Supabase 登录服务，请检查 DNS、代理或网络后重试。"
+      );
     }
 
     setLoading(false);
