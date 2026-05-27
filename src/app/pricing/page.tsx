@@ -30,10 +30,10 @@ export default function PricingPage() {
   }, []);
 
   function handlePlanClick(planName: string) {
-   setNotice(
-     `你选择了「${planName}」。当前为测试阶段，暂未接入在线支付。如需充值，请联系管理员处理。`
-   );
- }
+    setNotice(
+      `你选择了「${planName}」。当前为测试阶段，暂未接入在线支付。请联系管理员处理充值，并提供你的登录邮箱，管理员确认后会手动为你增加点数。`
+    );
+  }
 
   const plans = [
     {
@@ -117,7 +117,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            极智岛 AI 使用点数计费。测试阶段套餐仅作展示，后续将接入正式支付系统。
+            极智岛 AI 使用点数计费。测试阶段暂未接入在线支付，如需充值请联系管理员手动处理。
           </p>
 
           {notice && (
@@ -125,7 +125,6 @@ export default function PricingPage() {
               {notice}
             </div>
           )}
-
         </section>
 
         <section className="grid gap-6 md:grid-cols-3">
@@ -177,13 +176,37 @@ export default function PricingPage() {
           ))}
         </section>
 
+        <section className="mt-12 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
+            <h2 className="text-2xl font-bold">如何充值</h2>
+            <div className="mt-5 space-y-4 text-sm leading-7 text-slate-300">
+              <p>1. 先登录网站，确认你用于接收登录链接的邮箱。</p>
+              <p>2. 点击上方套餐按钮，记下你选择的套餐名称。</p>
+              <p>3. 联系管理员，并发送：登录邮箱、套餐名称、付款截图。</p>
+              <p>4. 管理员确认后，会手动为你的账号增加对应点数。</p>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-8">
+            <h2 className="text-2xl font-bold text-cyan-100">联系管理员</h2>
+            <p className="mt-5 text-sm leading-7 text-cyan-50/90">
+              当前为测试阶段，暂未开放自动支付。如需充值，请通过你与管理员约定的微信、邮箱或其他联系方式处理。
+            </p>
+            <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4 text-sm leading-7 text-cyan-50">
+              <p>请提供：登录邮箱</p>
+              <p>请提供：选择的套餐</p>
+              <p>请提供：付款截图或转账备注</p>
+            </div>
+          </div>
+        </section>
+
         <section className="mt-12 rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
           <h2 className="text-2xl font-bold">说明</h2>
           <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
-            <p>1. 当前为测试阶段，所有套餐仅用于页面展示。</p>
-            <p>2. 新用户注册后默认赠送测试点数。</p>
-            <p>3. 后续可接入微信、支付宝或 Stripe 支付。</p>
-            <p>4. 点数规则后续可以按不同 AI 模型单独设置消耗比例。</p>
+            <p>1. 当前为测试阶段，所有套餐主要用于页面展示和小范围试用。</p>
+            <p>2. 新用户注册后默认赠送测试点数，可在点数明细页查看流水。</p>
+            <p>3. 后续可接入微信、支付宝或 Stripe 支付，实现自动充值。</p>
+            <p>4. 点数消耗规则后续可以按不同 AI 模型单独设置。</p>
           </div>
         </section>
       </div>
