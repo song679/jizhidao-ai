@@ -6,12 +6,261 @@ type ChatMessage = {
   content: string;
 };
 
+type AiProvider = "deepseek" | "openai";
+
+type ModelOption = {
+  id: string;
+  provider: AiProvider;
+  model: string;
+  displayName: string;
+};
+
+const SYSTEM_PROMPT = `
+你是「极智岛 AI」的智能助手，服务对象主要是中文用户、普通用户、小白用户、创业者、自媒体人、电商卖家和办公人群。
+
+你的核心目标：
+帮助用户用最简单、最实用的方式解决问题，而不是堆概念。
+
+回答风格：
+- 一律使用中文回答，除非用户明确要求其他语言。
+- 语言要自然、直接、接地气。
+- 不要故意装专业，不要堆术语。
+- 如果必须使用专业词，要顺手解释成人话。
+- 回答要有判断，不要总是模棱两可。
+
+排版规则：
+- 默认使用 Markdown 排版。
+- 涉及多个要点时，使用列表。
+- 涉及步骤时，使用 1. 2. 3. 分步说明。
+- 涉及对比时，优先使用表格。
+- 每段尽量短一点，方便手机阅读。
+
+回答结构：
+- 先直接回答用户最关心的问题。
+- 再解释原因。
+- 最后给出可执行的下一步。
+- 如果用户的问题很大，先给最小可执行方案。
+`.trim();
+
+function parseModelList(value: string | undefined, fallback: string) {
+  const models = value
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return models && models.length > 0 ? models : [fallback];
+}
+
+function getModelOptions(): ModelOption[] {
+  const openaiModels = parseModelList(
+    process.env.OPENAI_MODEL_OPTIONS,
+    process.env.OPENAI_MODEL || "chat-latest"
+  );
+  const deepseekModels = parseModelList(
+    process.env.DEEPSEEK_MODEL_OPTIONS,
+    process.env.DEEPSEEK_MODEL || "deepseek-v4-flash"
+  );
+
+  return [
+    ...openaiModels.map((model) => ({
+      id: `openai:${model}`,
+      provider: "openai" as const,
+      model,
+      displayName: "ChatGPT",
+    })),
+    ...deepseekModels.map((model) => ({
+      id: `deepseek:${model}`,
+      provider: "deepseek" as const,
+      model,
+      displayName: "DeepSeek",
+    })),
+  ];
+}
+
+function resolveModelSelection(body: {
+  modelId?: unknown;
+  provider?: unknown;
+  model?: unknown;
+}) {
+  const options = getModelOptions();
+  const defaultProvider =
+    process.env.AI_PROVIDER === "openai" ? "openai" : "deepseek";
+  const defaultModel =
+    defaultProvider === "openai"
+      ? process.env.OPENAI_MODEL || "chat-latest"
+      : process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+
+  const selectedById =
+    typeof body.modelId === "string"
+      ? options.find((option) => option.id === body.modelId)
+      : null;
+
+  if (selectedById) {
+    return selectedById;
+  }
+
+  const selectedByProviderAndModel =
+    (body.provider === "openai" || body.provider === "deepseek") &&
+    typeof body.model === "string"
+      ? options.find(
+          (option) =>
+            option.provider === body.provider && option.model === body.model
+        )
+      : null;
+
+  if (selectedByProviderAndModel) {
+    return selectedByProviderAndModel;
+  }
+
+  return (
+    options.find(
+      (option) =>
+        option.provider === defaultProvider && option.model === defaultModel
+    ) ||
+    options.find((option) => option.provider === defaultProvider) ||
+    options[0]
+  );
+}
+
+function getSafeMessages(messages: unknown): ChatMessage[] {
+  if (!Array.isArray(messages)) {
+    return [];
+  }
+
+  return messages
+    .filter(
+      (message): message is ChatMessage =>
+        message &&
+        typeof message === "object" &&
+        "role" in message &&
+        "content" in message &&
+        ["user", "assistant", "system"].includes(String(message.role)) &&
+        typeof message.content === "string"
+    )
+    .slice(-10);
+}
+
+async function callDeepSeek(messages: ChatMessage[], model: string) {
+  const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+
+  if (!deepseekApiKey) {
+    return {
+      error: NextResponse.json(
+        { error: "服务器未配置 DEEPSEEK_API_KEY" },
+        { status: 500 }
+      ),
+      reply: "",
+    };
+  }
+
+  const response = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${deepseekApiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+        ...messages,
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+
+    return {
+      error: NextResponse.json(
+        {
+          error: "DeepSeek API 调用失败",
+          detail,
+        },
+        { status: response.status }
+      ),
+      reply: "",
+    };
+  }
+
+  const data = await response.json();
+  const reply = data?.choices?.[0]?.message?.content || "";
+
+  return {
+    error: null,
+    reply: reply || "抱歉，我暂时没有生成回复。",
+  };
+}
+
+async function callOpenAI(messages: ChatMessage[], model: string) {
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+
+  if (!openaiApiKey) {
+    return {
+      error: NextResponse.json(
+        { error: "服务器未配置 OPENAI_API_KEY" },
+        { status: 500 }
+      ),
+      reply: "",
+    };
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiApiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+        ...messages,
+      ],
+      temperature: 0.7,
+      max_completion_tokens: 1000,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+
+    return {
+      error: NextResponse.json(
+        {
+          error: "OpenAI API 调用失败",
+          detail,
+        },
+        { status: response.status }
+      ),
+      reply: "",
+    };
+  }
+
+  const data = await response.json();
+  const reply = data?.choices?.[0]?.message?.content || "";
+
+  return {
+    error: null,
+    reply: reply || "抱歉，我暂时没有生成回复。",
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
-    const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
@@ -27,13 +276,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!deepseekApiKey) {
-      return NextResponse.json(
-        { error: "服务器未配置 DEEPSEEK_API_KEY" },
-        { status: 500 }
-      );
-    }
-
     const authorization = request.headers.get("authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
@@ -44,7 +286,6 @@ export async function POST(request: Request) {
     }
 
     const accessToken = authorization.replace("Bearer ", "");
-
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
     const {
@@ -103,205 +344,139 @@ export async function POST(request: Request) {
       );
     }
 
-      const { messages, sessionId } = await request.json();
+    const body = await request.json();
+    const safeMessages = getSafeMessages(body.messages);
 
-      if (!Array.isArray(messages)) {
-        return NextResponse.json(
-          { error: "messages 参数格式不正确" },
-          { status: 400 }
-        );
-      }
-
-      const chatSessionId =
-        typeof sessionId === "string" && sessionId.trim()
-          ? sessionId.trim()
-          : null;
-
-      const userMessage =
-        messages
-          .filter((item: { role: string; content: string }) => item.role === "user")
-          .at(-1)?.content || "";
-
-    const safeMessages: ChatMessage[] = messages
-      .filter(
-        (message: ChatMessage) =>
-          message &&
-          ["user", "assistant", "system"].includes(message.role) &&
-          typeof message.content === "string"
-      )
-      .slice(-10);
-
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${deepseekApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-v4-flash",
-        messages: [
-          {
-            role: "system",
-            content: `
-你是「极智岛 AI」的智能助手，服务对象主要是中文用户、普通用户、小白用户、创业者、自媒体人、电商卖家和办公人群。
-
-你的核心目标：
-帮助用户用最简单、最实用的方式解决问题，而不是堆概念。
-
-回答风格：
-- 一律使用中文回答，除非用户明确要求其他语言。
-- 语言要自然、直接、接地气，像一个懂行的人在耐心解释。
-- 不要故意装专业，不要堆术语。
-- 如果必须使用专业词，要顺手解释成人话。
-- 回答要有判断，不要总是模棱两可。
-- 用户问“能不能做”“值不值得”“怎么做”时，要给出明确建议。
-
-排版规则：
-- 默认使用 Markdown 排版。
-- 重要词语可以使用 **加粗**。
-- 涉及多个点时，必须使用列表。
-- 涉及步骤时，必须使用 1、2、3 分步说明。
-- 涉及对比时，优先使用表格。
-- 不要输出大段密密麻麻的文字。
-- 每段尽量短一点，方便手机阅读。
-
-回答结构：
-- 先直接回答用户最关心的问题。
-- 再解释原因。
-- 最后给出可执行的下一步。
-- 如果用户的问题很大，先给最小可执行方案。
-
-内容偏好：
-- 多给实际建议，少讲空话。
-- 多说“怎么做”，少说“是什么”。
-- 适合普通人、低预算、低门槛的方案优先。
-- 不确定的地方要说清楚，不要瞎编。
-- 不要承诺无法保证的收益、效果或结果。
-`.trim(),
-          },
-          ...safeMessages,
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-
+    if (safeMessages.length === 0) {
       return NextResponse.json(
-        {
-          error: "DeepSeek API 调用失败",
-          detail: errorText,
-        },
-        { status: response.status }
+        { error: "messages 参数格式不正确" },
+        { status: 400 }
       );
     }
 
-    const data = await response.json();
+    const chatSessionId =
+      typeof body.sessionId === "string" && body.sessionId.trim()
+        ? body.sessionId.trim()
+        : null;
 
-    const reply =
-      data?.choices?.[0]?.message?.content || "抱歉，我暂时没有生成回复。";
+    const userMessage =
+      safeMessages.filter((item) => item.role === "user").at(-1)?.content || "";
 
-      const { error: userMessageError } = await supabaseAdmin
-        .from("chat_messages")
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          role: "user",
-          content: userMessage,
-          session_id: chatSessionId,
-        });
+    const selectedModel = resolveModelSelection(body);
+    const provider = selectedModel.provider;
+    const aiResult =
+      provider === "openai"
+        ? await callOpenAI(safeMessages, selectedModel.model)
+        : await callDeepSeek(safeMessages, selectedModel.model);
 
-      if (userMessageError) {
-        console.error("保存用户消息失败：", userMessageError.message);
+    if (aiResult.error) {
+      return aiResult.error;
+    }
+
+    const reply = aiResult.reply;
+
+    const { error: userMessageError } = await supabaseAdmin
+      .from("chat_messages")
+      .insert({
+        user_id: user.id,
+        email: user.email,
+        role: "user",
+        content: userMessage,
+        session_id: chatSessionId,
+      });
+
+    if (userMessageError) {
+      console.error("保存用户消息失败：", userMessageError.message);
+    }
+
+    const { error: assistantMessageError } = await supabaseAdmin
+      .from("chat_messages")
+      .insert({
+        user_id: user.id,
+        email: user.email,
+        role: "assistant",
+        content: reply,
+        session_id: chatSessionId,
+      });
+
+    if (assistantMessageError) {
+      console.error("保存 AI 回复失败：", assistantMessageError.message);
+    }
+
+    if (chatSessionId) {
+      const titleFromMessage =
+        userMessage.length > 20 ? `${userMessage.slice(0, 20)}...` : userMessage;
+
+      const { data: currentSession } = await supabaseAdmin
+        .from("chat_sessions")
+        .select("title")
+        .eq("id", chatSessionId)
+        .eq("user_id", user.id)
+        .single();
+
+      const nextTitle =
+        currentSession?.title === "新聊天" && titleFromMessage
+          ? titleFromMessage
+          : currentSession?.title || "新聊天";
+
+      const { error: sessionUpdateError } = await supabaseAdmin
+        .from("chat_sessions")
+        .update({
+          title: nextTitle,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", chatSessionId)
+        .eq("user_id", user.id);
+
+      if (sessionUpdateError) {
+        console.error("更新聊天会话失败：", sessionUpdateError.message);
       }
-
-      const { error: assistantMessageError } = await supabaseAdmin
-        .from("chat_messages")
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          role: "assistant",
-          content: reply,
-          session_id: chatSessionId,
-        });
-
-      if (assistantMessageError) {
-        console.error("保存 AI 回复失败：", assistantMessageError.message);
-      }
-
-      if (chatSessionId) {
-        const titleFromMessage =
-          userMessage.length > 20 ? `${userMessage.slice(0, 20)}...` : userMessage;
-
-        const { data: currentSession } = await supabaseAdmin
-          .from("chat_sessions")
-          .select("title")
-          .eq("id", chatSessionId)
-          .eq("user_id", user.id)
-          .single();
-
-        const nextTitle =
-          currentSession?.title === "新聊天" && titleFromMessage
-            ? titleFromMessage
-            : currentSession?.title || "新聊天";
-
-        const { error: sessionUpdateError } = await supabaseAdmin
-          .from("chat_sessions")
-          .update({
-            title: nextTitle,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", chatSessionId)
-          .eq("user_id", user.id);
-
-        if (sessionUpdateError) {
-          console.error("更新聊天会话失败：", sessionUpdateError.message);
-        }
-      }
+    }
 
     const newPoints = currentPoints - 1;
 
-const { error: updateError } = await supabaseAdmin
-  .from("user_points")
-  .update({
-    points: newPoints,
-    updated_at: new Date().toISOString(),
-  })
-  .eq("id", user.id);
+    const { error: updateError } = await supabaseAdmin
+      .from("user_points")
+      .update({
+        points: newPoints,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
 
-if (updateError) {
-  console.error("扣点失败：", updateError.message);
+    if (updateError) {
+      console.error("扣点失败：", updateError.message);
 
-  return NextResponse.json(
-    { error: "扣除点数失败，请稍后再试" },
-    { status: 500 }
-  );
-}
+      return NextResponse.json(
+        { error: "扣除点数失败，请稍后再试" },
+        { status: 500 }
+      );
+    }
 
-const { error: transactionError } = await supabaseAdmin
-  .from("point_transactions")
-  .insert({
-    user_id: user.id,
-    email: user.email,
-    change_amount: -1,
-    balance_after: newPoints,
-    type: "chat",
-    description: "AI 聊天扣除 1 点",
-  });
+    const { error: transactionError } = await supabaseAdmin
+      .from("point_transactions")
+      .insert({
+        user_id: user.id,
+        email: user.email,
+        change_amount: -1,
+        balance_after: newPoints,
+        type: "chat",
+        description:
+          provider === "openai" ? "ChatGPT 聊天扣除 1 点" : "AI 聊天扣除 1 点",
+      });
 
-if (transactionError) {
-  console.error("写入点数流水失败：", transactionError.message);
-}
+    if (transactionError) {
+      console.error("写入点数流水失败：", transactionError.message);
+    }
 
-return NextResponse.json({
-  reply,
-  points: newPoints,
-  sessionId: chatSessionId,
-});
-
+    return NextResponse.json({
+      reply,
+      points: newPoints,
+      sessionId: chatSessionId,
+      provider,
+      model: selectedModel.model,
+      modelId: selectedModel.id,
+      displayName: selectedModel.displayName,
+    });
   } catch (error) {
     console.error("Chat API Error:", error);
 

@@ -17,6 +17,14 @@ type ChatSession = {
   updated_at: string;
 };
 
+type ModelOption = {
+  id: string;
+  provider: "deepseek" | "openai";
+  model: string;
+  displayName: string;
+  label: string;
+};
+
 export default function ChatPage() {
        const defaultMessages: Message[] = [
        {
@@ -34,13 +42,37 @@ export default function ChatPage() {
   const [userEmail, setUserEmail] = useState("");
   const [points, setPoints] = useState<number>(1000);
   const [activeTool, setActiveTool] = useState("AI 聊天");
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState("");
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const selectedModel =
+    modelOptions.find((option) => option.id === selectedModelId) ||
+    modelOptions[0];
+  const modelName = selectedModel?.displayName || "AI";
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    async function getChatConfig() {
+      try {
+        const response = await fetch("/api/chat/config");
+        const data = await response.json();
+
+        if (response.ok && Array.isArray(data.models)) {
+          setModelOptions(data.models);
+          setSelectedModelId(data.modelId || data.models[0]?.id || "");
+        }
+      } catch (error) {
+        console.error("加载模型配置失败：", error);
+      }
+    }
+
+    getChatConfig();
+  }, []);
   
   useEffect(() => {
   async function getUser() {
@@ -333,6 +365,9 @@ async function logout() {
         body: JSON.stringify({
           messages: newMessages,
           sessionId: currentSessionId,
+          modelId: selectedModel?.id,
+          provider: selectedModel?.provider,
+          model: selectedModel?.model,
         }),
       });
 
@@ -344,6 +379,10 @@ async function logout() {
 
       if (typeof data.points === "number") {
         setPoints(data.points);
+      }
+
+      if (typeof data.modelId === "string") {
+        setSelectedModelId(data.modelId);
       }
 
       if (data.sessionId && !currentSessionId) {
@@ -404,9 +443,31 @@ async function logout() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <div className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 md:block">
-              当前模型：<span className="font-semibold text-white">DeepSeek</span>
-            </div>
+            <label className="hidden items-center rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 md:flex">
+              <span className="mr-2 shrink-0">当前模型：</span>
+              <select
+                value={selectedModelId}
+                onChange={(event) => setSelectedModelId(event.target.value)}
+                disabled={loading || modelOptions.length === 0}
+                className="max-w-44 bg-transparent font-semibold text-white outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {modelOptions.length === 0 ? (
+                  <option className="bg-slate-950 text-white" value="">
+                    加载中
+                  </option>
+                ) : (
+                  modelOptions.map((option) => (
+                    <option
+                      key={option.id}
+                      className="bg-slate-950 text-white"
+                      value={option.id}
+                    >
+                      {option.label}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
 
             <a
               href="/pricing"
@@ -693,7 +754,7 @@ async function logout() {
                   ? "请先登录后使用 AI 聊天功能。"
                   : points <= 0
                     ? "点数已用完，请充值后继续使用 AI 聊天功能。"
-                    : "当前已接入 DeepSeek 模型，测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。"}
+                    : `当前已接入 ${modelName} 模型，测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。`}
               </p>
             </div>
           </section>
