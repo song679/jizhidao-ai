@@ -48,6 +48,18 @@ export async function GET(request: Request) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
 
+    const { error: recoveryError } = await supabaseAdmin.rpc(
+      "recover_stale_chat_reservations",
+      {
+        p_user_id: user.id,
+        p_stale_seconds: 600,
+      }
+    );
+
+    if (recoveryError && recoveryError.code !== "PGRST202") {
+      console.error("恢复超时预扣点数失败：", recoveryError.message);
+    }
+
     const { data: existingPoints, error: pointsQueryError } =
       await supabaseAdmin
         .from("user_points")

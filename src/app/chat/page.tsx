@@ -374,6 +374,7 @@ async function logout() {
     setLoading(true);
 
     try {
+      const requestId = crypto.randomUUID();
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -395,12 +396,29 @@ async function logout() {
           modelId: selectedModel?.id,
           provider: selectedModel?.provider,
           model: selectedModel?.model,
+          requestId,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        if (typeof data.points === "number") {
+          setPoints(data.points);
+        }
+
+        if ([402, 409, 429].includes(response.status)) {
+          setInput(userText);
+          setMessages([
+            ...newMessages,
+            {
+              role: "assistant",
+              content: data?.error || "请求暂时无法处理，请稍后再试。",
+            },
+          ]);
+          return;
+        }
+
         throw new Error(data?.detail || data?.error || "请求失败");
       }
 

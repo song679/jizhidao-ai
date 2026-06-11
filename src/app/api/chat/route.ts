@@ -58,6 +58,23 @@ function parsePointCost(value: string | undefined, fallback: number) {
   return Number.isInteger(pointCost) && pointCost > 0 ? pointCost : fallback;
 }
 
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  const parsedValue = Number(value);
+
+  return Number.isInteger(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : fallback;
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    )
+  );
+}
+
 function getModelOptions(): ModelOption[] {
   const openaiModels = parseModelList(
     process.env.OPENAI_MODEL_OPTIONS,
@@ -166,6 +183,7 @@ async function callDeepSeek(messages: ChatMessage[], model: string) {
 
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(60_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${deepseekApiKey}`,
@@ -224,6 +242,7 @@ async function callOpenAI(messages: ChatMessage[], model: string) {
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(60_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${openaiApiKey}`,
@@ -313,41 +332,6 @@ export async function POST(request: Request) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
 
-    const { data: existingPoints, error: pointsQueryError } =
-      await supabaseAdmin
-        .from("user_points")
-        .select("id, email, points")
-        .eq("id", user.id)
-        .single();
-
-    if (pointsQueryError && pointsQueryError.code !== "PGRST116") {
-      return NextResponse.json(
-        { error: "查询用户点数失败", detail: pointsQueryError.message },
-        { status: 500 }
-      );
-    }
-
-    let currentPoints = existingPoints?.points ?? 1000;
-
-    if (!existingPoints) {
-      const { error: insertError } = await supabaseAdmin
-        .from("user_points")
-        .insert({
-          id: user.id,
-          email: user.email,
-          points: 1000,
-        });
-
-      if (insertError) {
-        return NextResponse.json(
-          { error: "初始化用户点数失败", detail: insertError.message },
-          { status: 500 }
-        );
-      }
-
-      currentPoints = 1000;
-    }
-
     const body = await request.json();
     const safeMessages = getSafeMessages(body.messages);
 
@@ -369,131 +353,201 @@ export async function POST(request: Request) {
     const selectedModel = resolveModelSelection(body);
     const provider = selectedModel.provider;
     const pointCost = selectedModel.pointCost;
+    const requestId = body.requestId;
 
-    if (currentPoints < pointCost) {
+    if (!isUuid(requestId)) {
+      return NextResponse.json(
+        { error: "请求标识无效，请刷新页面后重试" },
+        { status: 400 }
+      );
+    }
+
+    const rateLimit = parsePositiveInteger(process.env.CHAT_RATE_LIMIT, 10);
+    const rateWindowSeconds = parsePositiveInteger(
+      process.env.CHAT_RATE_WINDOW_SECONDS,
+      60
+    );
+    const { data: reservation, error: reservationError } =
+      await supabaseAdmin.rpc("reserve_chat_points", {
+        p_request_id: requestId,
+        p_user_id: user.id,
+        p_email: user.email || "",
+        p_point_cost: pointCost,
+        p_model_name: `${selectedModel.displayName} - ${selectedModel.model}`,
+        p_rate_limit: rateLimit,
+        p_window_seconds: rateWindowSeconds,
+      });
+
+    if (reservationError) {
+      console.error("预扣点数失败：", reservationError.message);
+
+      return NextResponse.json(
+        { error: "点数安全服务暂时不可用，请联系管理员" },
+        { status: 503 }
+      );
+    }
+
+    if (reservation?.status === "duplicate") {
+      return NextResponse.json(
+        { error: "该请求已经处理，请勿重复提交" },
+        { status: 409 }
+      );
+    }
+
+    if (reservation?.status === "rate_limited") {
+      return NextResponse.json(
+        {
+          error: "发送过于频繁，请稍后再试",
+          retryAfter: reservation.retryAfter || rateWindowSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(
+              reservation.retryAfter || rateWindowSeconds
+            ),
+          },
+        }
+      );
+    }
+
+    if (reservation?.status === "insufficient_points") {
       return NextResponse.json(
         {
           error: `当前模型每次需要 ${pointCost} 点，余额不足，请充值或切换其他模型`,
           requiredPoints: pointCost,
-          points: currentPoints,
+          points: reservation.points,
         },
         { status: 402 }
       );
     }
 
-    const aiResult =
-      provider === "openai"
-        ? await callOpenAI(safeMessages, selectedModel.model)
-        : await callDeepSeek(safeMessages, selectedModel.model);
-
-    if (aiResult.error) {
-      return aiResult.error;
-    }
-
-    const reply = aiResult.reply;
-
-    const { error: userMessageError } = await supabaseAdmin
-      .from("chat_messages")
-      .insert({
-        user_id: user.id,
-        email: user.email,
-        role: "user",
-        content: userMessage,
-        session_id: chatSessionId,
-      });
-
-    if (userMessageError) {
-      console.error("保存用户消息失败：", userMessageError.message);
-    }
-
-    const { error: assistantMessageError } = await supabaseAdmin
-      .from("chat_messages")
-      .insert({
-        user_id: user.id,
-        email: user.email,
-        role: "assistant",
-        content: reply,
-        session_id: chatSessionId,
-      });
-
-    if (assistantMessageError) {
-      console.error("保存 AI 回复失败：", assistantMessageError.message);
-    }
-
-    if (chatSessionId) {
-      const titleFromMessage =
-        userMessage.length > 20 ? `${userMessage.slice(0, 20)}...` : userMessage;
-
-      const { data: currentSession } = await supabaseAdmin
-        .from("chat_sessions")
-        .select("title")
-        .eq("id", chatSessionId)
-        .eq("user_id", user.id)
-        .single();
-
-      const nextTitle =
-        currentSession?.title === "新聊天" && titleFromMessage
-          ? titleFromMessage
-          : currentSession?.title || "新聊天";
-
-      const { error: sessionUpdateError } = await supabaseAdmin
-        .from("chat_sessions")
-        .update({
-          title: nextTitle,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", chatSessionId)
-        .eq("user_id", user.id);
-
-      if (sessionUpdateError) {
-        console.error("更新聊天会话失败：", sessionUpdateError.message);
-      }
-    }
-
-    const newPoints = currentPoints - pointCost;
-
-    const { error: updateError } = await supabaseAdmin
-      .from("user_points")
-      .update({
-        points: newPoints,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-
-    if (updateError) {
-      console.error("扣点失败：", updateError.message);
-
+    if (reservation?.status !== "reserved") {
       return NextResponse.json(
-        { error: "扣除点数失败，请稍后再试" },
+        { error: "无法确认点数预扣状态，请稍后再试" },
         { status: 500 }
       );
     }
 
-    const { error: transactionError } = await supabaseAdmin
-      .from("point_transactions")
-      .insert({
-        user_id: user.id,
-        email: user.email,
-        change_amount: -pointCost,
-        balance_after: newPoints,
-        type: "chat",
-        description: `${selectedModel.displayName} 聊天扣除 ${pointCost} 点`,
-      });
+    async function refundReservation() {
+      const { error: refundError } = await supabaseAdmin.rpc(
+        "refund_chat_request",
+        {
+          p_request_id: requestId,
+        }
+      );
 
-    if (transactionError) {
-      console.error("写入点数流水失败：", transactionError.message);
+      if (refundError) {
+        console.error("退还预扣点数失败：", refundError.message);
+      }
     }
 
-    return NextResponse.json({
-      reply,
-      points: newPoints,
-      sessionId: chatSessionId,
-      provider,
-      model: selectedModel.model,
-      modelId: selectedModel.id,
-      displayName: selectedModel.displayName,
-      pointCost,
-    });
+    try {
+      const aiResult =
+        provider === "openai"
+          ? await callOpenAI(safeMessages, selectedModel.model)
+          : await callDeepSeek(safeMessages, selectedModel.model);
+
+      if (aiResult.error) {
+        await refundReservation();
+        return aiResult.error;
+      }
+
+      const reply = aiResult.reply;
+      const { data: completion, error: completionError } =
+        await supabaseAdmin.rpc("complete_chat_request", {
+          p_request_id: requestId,
+          p_description: `${selectedModel.displayName} 聊天扣除 ${pointCost} 点`,
+        });
+
+      if (completionError || completion?.status !== "completed") {
+        console.error(
+          "完成聊天扣点失败：",
+          completionError?.message || completion?.status
+        );
+        await refundReservation();
+
+        return NextResponse.json(
+          { error: "完成点数结算失败，本次预扣点数已退还" },
+          { status: 500 }
+        );
+      }
+
+      const { error: userMessageError } = await supabaseAdmin
+        .from("chat_messages")
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          role: "user",
+          content: userMessage,
+          session_id: chatSessionId,
+        });
+
+      if (userMessageError) {
+        console.error("保存用户消息失败：", userMessageError.message);
+      }
+
+      const { error: assistantMessageError } = await supabaseAdmin
+        .from("chat_messages")
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          role: "assistant",
+          content: reply,
+          session_id: chatSessionId,
+        });
+
+      if (assistantMessageError) {
+        console.error("保存 AI 回复失败：", assistantMessageError.message);
+      }
+
+      if (chatSessionId) {
+        const titleFromMessage =
+          userMessage.length > 20
+            ? `${userMessage.slice(0, 20)}...`
+            : userMessage;
+
+        const { data: currentSession } = await supabaseAdmin
+          .from("chat_sessions")
+          .select("title")
+          .eq("id", chatSessionId)
+          .eq("user_id", user.id)
+          .single();
+
+        const nextTitle =
+          currentSession?.title === "新聊天" && titleFromMessage
+            ? titleFromMessage
+            : currentSession?.title || "新聊天";
+
+        const { error: sessionUpdateError } = await supabaseAdmin
+          .from("chat_sessions")
+          .update({
+            title: nextTitle,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", chatSessionId)
+          .eq("user_id", user.id);
+
+        if (sessionUpdateError) {
+          console.error("更新聊天会话失败：", sessionUpdateError.message);
+        }
+      }
+
+      return NextResponse.json({
+        reply,
+        points: completion.points,
+        sessionId: chatSessionId,
+        provider,
+        model: selectedModel.model,
+        modelId: selectedModel.id,
+        displayName: selectedModel.displayName,
+        pointCost,
+        requestId,
+      });
+    } catch (error) {
+      await refundReservation();
+      throw error;
+    }
   } catch (error) {
     console.error("Chat API Error:", error);
 
