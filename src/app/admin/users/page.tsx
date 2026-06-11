@@ -164,6 +164,12 @@ export default function AdminUsersPage() {
 
           <nav className="flex items-center gap-2 text-sm">
             <Link
+              href="/admin"
+              className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              运营概览
+            </Link>
+            <Link
               href="/admin/recharge"
               className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
             >

@@ -1,0 +1,365 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
+type DashboardData = {
+  adminEmail: string;
+  generatedAt: string;
+  metrics: {
+    accounts: number;
+    completedToday: number;
+    refundedToday: number;
+    todayPointsUsed: number;
+    todayRecharged: number;
+  };
+  daily: Array<{
+    date: string;
+    chats: number;
+    pointsUsed: number;
+    recharged: number;
+  }>;
+  models: Array<{
+    model: string;
+    requests: number;
+    pointsUsed: number;
+  }>;
+  recentActivity: Array<{
+    id: string;
+    email: string;
+    change_amount: number;
+    balance_after: number;
+    type: string;
+    description: string | null;
+    created_at: string;
+  }>;
+};
+
+const transactionLabels: Record<string, string> = {
+  chat: "AI 聊天",
+  recharge: "充值",
+  refund: "退还",
+  gift: "赠送",
+};
+
+export default function AdminDashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  function formatTime(value: string) {
+    return new Date(value).toLocaleString("zh-CN", {
+      hour12: false,
+      timeZone: "Asia/Shanghai",
+    });
+  }
+
+  function formatDate(value: string) {
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "numeric",
+      day: "numeric",
+      timeZone: "Asia/Shanghai",
+    }).format(new Date(`${value}T00:00:00+08:00`));
+  }
+
+  async function loadDashboard() {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.assign("/login");
+        return;
+      }
+
+      const response = await fetch("/api/admin/dashboard", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData?.error || "加载运营概览失败");
+      }
+
+      setData(responseData);
+    } catch (error) {
+      console.error("加载运营概览失败：", error);
+      setMessage(error instanceof Error ? error.message : "加载运营概览失败");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(loadDashboard, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const maxDailyChats = Math.max(
+    1,
+    ...(data?.daily.map((item) => item.chats) || [1])
+  );
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-white">
+      <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <Link href="/" className="text-2xl font-bold">
+            极智岛 AI
+          </Link>
+
+          <nav className="flex flex-wrap items-center gap-2 text-sm">
+            <Link
+              href="/admin/users"
+              className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              用户管理
+            </Link>
+            <Link
+              href="/admin/recharge"
+              className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              充值管理
+            </Link>
+            <Link
+              href="/chat"
+              className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              返回聊天
+            </Link>
+          </nav>
+        </header>
+
+        <section className="py-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-cyan-300">管理员工具</p>
+              <h1 className="mt-2 text-3xl font-bold">运营概览</h1>
+              <p className="mt-2 text-sm text-slate-400">
+                {data?.adminEmail || "正在验证管理员权限..."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={loadDashboard}
+              disabled={loading}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "刷新中..." : "刷新数据"}
+            </button>
+          </div>
+        </section>
+
+        {message && (
+          <div className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-100">
+            {message}
+          </div>
+        )}
+
+        <section className="grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["点数账户", data?.metrics.accounts ?? 0, "累计初始化用户"],
+            [
+              "今日 AI 调用",
+              data?.metrics.completedToday ?? 0,
+              "成功完成请求",
+            ],
+            [
+              "今日消耗",
+              data?.metrics.todayPointsUsed ?? 0,
+              "聊天消耗点数",
+            ],
+            [
+              "今日充值",
+              data?.metrics.todayRecharged ?? 0,
+              "管理员充值点数",
+            ],
+            [
+              "今日退还",
+              data?.metrics.refundedToday ?? 0,
+              "失败请求已退款",
+            ],
+          ].map(([label, value, note]) => (
+            <div key={label} className="bg-slate-950 px-5 py-5">
+              <p className="text-xs text-slate-400">{label}</p>
+              <p className="mt-2 text-2xl font-bold text-cyan-300">
+                {Number(value).toLocaleString()}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">{note}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="grid gap-8 py-8 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">近 7 天 AI 使用</h2>
+              <span className="text-xs text-slate-500">北京时间</span>
+            </div>
+
+            <div className="mt-4 overflow-x-auto rounded-lg border border-slate-800">
+              <table className="w-full min-w-[620px] text-sm">
+                <thead className="bg-slate-900 text-left text-xs text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">日期</th>
+                    <th className="px-4 py-3 font-semibold">调用趋势</th>
+                    <th className="px-4 py-3 text-right font-semibold">调用</th>
+                    <th className="px-4 py-3 text-right font-semibold">消耗</th>
+                    <th className="px-4 py-3 text-right font-semibold">充值</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {(data?.daily || []).map((item) => (
+                    <tr key={item.date}>
+                      <td className="px-4 py-4 font-semibold">
+                        {formatDate(item.date)}
+                      </td>
+                      <td className="w-48 px-4 py-4">
+                        <div className="h-2 overflow-hidden rounded bg-slate-800">
+                          <div
+                            className="h-full rounded bg-cyan-400"
+                            style={{
+                              width: `${Math.max(
+                                item.chats > 0 ? 8 : 0,
+                                (item.chats / maxDailyChats) * 100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right">{item.chats}</td>
+                      <td className="px-4 py-4 text-right text-slate-300">
+                        {item.pointsUsed.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-4 text-right text-cyan-300">
+                        {item.recharged.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {!loading && !data?.daily.length && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-4 py-10 text-center text-slate-400"
+                      >
+                        暂无运营数据。
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside className="min-w-0 border-t border-slate-800 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">模型使用分布</h2>
+              <span className="text-xs text-slate-500">近 7 天</span>
+            </div>
+
+            <div className="mt-4 divide-y divide-slate-800 border-y border-slate-800">
+              {(data?.models || []).map((item) => (
+                <div
+                  key={item.model}
+                  className="grid grid-cols-[1fr_auto] gap-4 py-4 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold" title={item.model}>
+                      {item.model}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      消耗 {item.pointsUsed.toLocaleString()} 点
+                    </p>
+                  </div>
+                  <p className="font-bold text-cyan-300">
+                    {item.requests.toLocaleString()} 次
+                  </p>
+                </div>
+              ))}
+              {!loading && !data?.models.length && (
+                <p className="py-8 text-sm text-slate-400">
+                  近 7 天还没有成功的 AI 调用。
+                </p>
+              )}
+            </div>
+          </aside>
+        </section>
+
+        <section className="border-t border-slate-800 py-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">最近点数活动</h2>
+            <span className="text-xs text-slate-500">最近 20 条</span>
+          </div>
+
+          <div className="mt-4 overflow-x-auto rounded-lg border border-slate-800">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="bg-slate-900 text-xs text-slate-400">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">用户</th>
+                  <th className="px-4 py-3 font-semibold">类型</th>
+                  <th className="px-4 py-3 font-semibold">说明</th>
+                  <th className="px-4 py-3 text-right font-semibold">变动</th>
+                  <th className="px-4 py-3 text-right font-semibold">余额</th>
+                  <th className="px-4 py-3 font-semibold">时间</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {(data?.recentActivity || []).map((item) => (
+                  <tr key={item.id}>
+                    <td className="max-w-52 truncate px-4 py-4 font-semibold">
+                      {item.email}
+                    </td>
+                    <td className="px-4 py-4">
+                      {transactionLabels[item.type] || item.type}
+                    </td>
+                    <td className="max-w-60 truncate px-4 py-4 text-slate-400">
+                      {item.description || "无说明"}
+                    </td>
+                    <td
+                      className={`px-4 py-4 text-right font-bold ${
+                        item.change_amount >= 0
+                          ? "text-cyan-300"
+                          : "text-rose-300"
+                      }`}
+                    >
+                      {item.change_amount >= 0 ? "+" : ""}
+                      {item.change_amount.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      {item.balance_after.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-4 text-xs text-slate-500">
+                      {formatTime(item.created_at)}
+                    </td>
+                  </tr>
+                ))}
+                {!loading && !data?.recentActivity.length && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-10 text-center text-slate-400"
+                    >
+                      暂无点数活动。
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {data?.generatedAt && (
+            <p className="mt-3 text-right text-xs text-slate-500">
+              数据更新时间：{formatTime(data.generatedAt)}
+            </p>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}

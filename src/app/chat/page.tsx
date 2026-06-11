@@ -520,10 +520,10 @@ async function logout() {
 
             {isAdmin && (
               <a
-                href="/admin/users"
+                href="/admin"
                 className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 xl:inline-block"
               >
-                用户管理
+                管理后台
               </a>
             )}
 

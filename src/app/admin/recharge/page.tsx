@@ -215,6 +215,12 @@ export default function AdminRechargePage() {
 
           <nav className="flex items-center gap-2">
             <Link
+              href="/admin"
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              运营概览
+            </Link>
+            <Link
               href="/admin/users"
               className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
             >
