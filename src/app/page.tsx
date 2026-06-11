@@ -83,12 +83,20 @@ export default function Home() {
           </nav>
 
           {userEmail ? (
-            <a
-              href="/chat"
-              className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
-            >
-              进入 AI 聊天
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href="/account"
+                className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white sm:inline-block"
+              >
+                我的账户
+              </a>
+              <a
+                href="/chat"
+                className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+              >
+                进入 AI 聊天
+              </a>
+            </div>
           ) : (
             <a
               href="/login"

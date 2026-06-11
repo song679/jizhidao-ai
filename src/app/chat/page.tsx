@@ -528,9 +528,13 @@ async function logout() {
             )}
 
             {userEmail && (
-              <span className="hidden text-sm text-slate-300 lg:inline">
+              <Link
+                href="/account"
+                className="hidden text-sm text-slate-300 hover:text-cyan-300 lg:inline"
+                title="进入账户中心"
+              >
                 {userEmail}
-              </span>
+              </Link>
             )}
 
             {userEmail ? (

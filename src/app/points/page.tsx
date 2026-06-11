@@ -90,6 +90,9 @@ export default function PointsPage() {
             <a href="/points" className="text-cyan-300">
               点数明细
             </a>
+            <a href="/account" className="hover:text-white">
+              我的账户
+            </a>
           </nav>
 
           <div className="flex items-center gap-3">
