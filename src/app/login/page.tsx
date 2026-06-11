@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -21,22 +20,27 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: userEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/chat?welcome=1`,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          email: userEmail,
+        }),
       });
+      const data = await response.json();
 
-      if (error) {
-        setMessage(`发送失败：${error.message}`);
+      if (!response.ok) {
+        setMessage(`发送失败：${data?.error || "请稍后再试"}`);
       } else {
-        setMessage("登录链接已发送到你的邮箱，请打开邮箱点击链接登录。");
+        setMessage(
+          data?.message ||
+            "登录链接已发送到你的邮箱，请打开邮箱点击链接登录。"
+        );
       }
     } catch {
-      setMessage(
-        "发送失败：当前网络无法连接 Supabase 登录服务，请检查 DNS、代理或网络后重试。"
-      );
+      setMessage("发送失败：当前网络无法连接网站登录服务，请稍后重试。");
     }
 
     setLoading(false);
