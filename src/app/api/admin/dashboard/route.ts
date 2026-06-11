@@ -20,6 +20,15 @@ function getChinaDateKey(value: string) {
     .slice(0, 10);
 }
 
+function getModelLabel(description: string | null) {
+  if (!description) {
+    return "其他模型";
+  }
+
+  const matched = description.match(/^(.+?)\s*聊天扣除/);
+  return matched?.[1]?.trim() || "其他模型";
+}
+
 export async function GET(request: Request) {
   try {
     const adminContext = await authorizeAdmin(request);
@@ -35,40 +44,21 @@ export async function GET(request: Request) {
 
     const [
       accountsResult,
-      completedTodayResult,
-      refundedTodayResult,
       todayTransactionsResult,
       sevenDayTransactionsResult,
-      modelUsageResult,
       recentActivityResult,
     ] = await Promise.all([
       adminContext.supabaseAdmin
         .from("user_points")
         .select("id", { count: "exact", head: true }),
       adminContext.supabaseAdmin
-        .from("chat_request_ledger")
-        .select("request_id", { count: "exact", head: true })
-        .eq("status", "completed")
-        .gte("created_at", todayIso),
-      adminContext.supabaseAdmin
-        .from("chat_request_ledger")
-        .select("request_id", { count: "exact", head: true })
-        .eq("status", "refunded")
-        .gte("created_at", todayIso),
-      adminContext.supabaseAdmin
         .from("point_transactions")
-        .select("change_amount, type")
+        .select("change_amount, type, description")
         .gte("created_at", todayIso)
         .limit(5000),
       adminContext.supabaseAdmin
         .from("point_transactions")
-        .select("change_amount, type, created_at")
-        .gte("created_at", sevenDayIso)
-        .limit(10000),
-      adminContext.supabaseAdmin
-        .from("chat_request_ledger")
-        .select("model_name, point_cost, created_at")
-        .eq("status", "completed")
+        .select("change_amount, type, description, created_at")
         .gte("created_at", sevenDayIso)
         .limit(10000),
       adminContext.supabaseAdmin
@@ -82,11 +72,8 @@ export async function GET(request: Request) {
 
     const queryError = [
       accountsResult.error,
-      completedTodayResult.error,
-      refundedTodayResult.error,
       todayTransactionsResult.error,
       sevenDayTransactionsResult.error,
-      modelUsageResult.error,
       recentActivityResult.error,
     ].find(Boolean);
 
@@ -98,6 +85,12 @@ export async function GET(request: Request) {
     }
 
     const todayTransactions = todayTransactionsResult.data || [];
+    const completedToday = todayTransactions.filter(
+      (item) => item.type === "chat"
+    ).length;
+    const refundedToday = todayTransactions.filter(
+      (item) => item.type === "refund"
+    ).length;
     const todayPointsUsed = todayTransactions
       .filter((item) => item.type === "chat")
       .reduce((sum, item) => sum + Math.abs(item.change_amount || 0), 0);
@@ -136,15 +129,18 @@ export async function GET(request: Request) {
       { model: string; requests: number; pointsUsed: number }
     >();
 
-    for (const requestItem of modelUsageResult.data || []) {
-      const current = modelMap.get(requestItem.model_name) || {
-        model: requestItem.model_name,
+    for (const transaction of sevenDayTransactionsResult.data || []) {
+      if (transaction.type !== "chat") continue;
+
+      const modelLabel = getModelLabel(transaction.description);
+      const current = modelMap.get(modelLabel) || {
+        model: modelLabel,
         requests: 0,
         pointsUsed: 0,
       };
       current.requests += 1;
-      current.pointsUsed += requestItem.point_cost || 0;
-      modelMap.set(requestItem.model_name, current);
+      current.pointsUsed += Math.abs(transaction.change_amount || 0);
+      modelMap.set(modelLabel, current);
     }
 
     return NextResponse.json({
@@ -152,8 +148,8 @@ export async function GET(request: Request) {
       generatedAt: new Date().toISOString(),
       metrics: {
         accounts: accountsResult.count || 0,
-        completedToday: completedTodayResult.count || 0,
-        refundedToday: refundedTodayResult.count || 0,
+        completedToday,
+        refundedToday,
         todayPointsUsed,
         todayRecharged,
       },
