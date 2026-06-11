@@ -4,6 +4,21 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+type RechargeRecord = {
+  id: string;
+  email: string;
+  change_amount: number;
+  balance_after: number;
+  description: string | null;
+  created_at: string;
+};
+
+const rechargePresets = [
+  { name: "体验包", amount: 1000 },
+  { name: "标准包", amount: 5000 },
+  { name: "进阶包", amount: 20000 },
+];
+
 export default function AdminRechargePage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [accessChecking, setAccessChecking] = useState(true);
@@ -16,6 +31,32 @@ export default function AdminRechargePage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [recentRecharges, setRecentRecharges] = useState<RechargeRecord[]>([]);
+
+  function formatTime(value: string) {
+    return new Date(value).toLocaleString("zh-CN", {
+      hour12: false,
+    });
+  }
+
+  async function loadRecentRecharges(accessToken: string) {
+    const response = await fetch("/api/admin/recharge", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || "无法加载管理员信息");
+    }
+
+    setAdminEmail(data.adminEmail || "");
+    setRecentRecharges(
+      Array.isArray(data.recentRecharges) ? data.recentRecharges : []
+    );
+    setAuthorized(true);
+  }
 
   useEffect(() => {
     async function loadAdmin() {
@@ -29,23 +70,14 @@ export default function AdminRechargePage() {
       }
 
       try {
-        const response = await fetch("/api/admin/recharge", {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          setMessage(data?.error || "无法验证管理员权限");
-          return;
-        }
-
-        setAdminEmail(data.adminEmail || session.user.email || "");
-        setAuthorized(true);
+        await loadRecentRecharges(session.access_token);
       } catch (error) {
         console.error("管理员权限验证失败：", error);
-        setMessage("暂时无法验证管理员权限，请稍后再试");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "暂时无法验证管理员权限，请稍后再试"
+        );
       } finally {
         setAccessChecking(false);
       }
@@ -156,6 +188,7 @@ export default function AdminRechargePage() {
         `充值成功：${data.email} 增加 ${data.addedPoints} 点，当前余额 ${data.points} 点。`
       );
       setAccountPoints(data.points);
+      await loadRecentRecharges(session.access_token);
     } catch (error) {
       console.error("管理员充值失败：", error);
       setMessage(error instanceof Error ? error.message : "充值失败");
@@ -240,6 +273,21 @@ export default function AdminRechargePage() {
                   required
                   className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                 />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {rechargePresets.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => {
+                        setAmount(String(preset.amount));
+                        setNote(`${preset.name}充值`);
+                      }}
+                      className="rounded-full border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+                    >
+                      {preset.name} · {preset.amount.toLocaleString()} 点
+                    </button>
+                  ))}
+                </div>
               </label>
 
               <label>
@@ -292,6 +340,58 @@ export default function AdminRechargePage() {
           <p>充值成功后，系统会同步更新用户余额并写入点数明细。</p>
           <p>提交前请再次核对用户邮箱和充值点数，避免加错账号。</p>
         </section>
+
+        {authorized && (
+          <section className="border-t border-slate-800 py-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-cyan-300">
+                  充值流水
+                </p>
+                <h2 className="mt-2 text-2xl font-bold">最近充值记录</h2>
+              </div>
+              <span className="text-xs text-slate-500">最多显示 20 条</span>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-lg border border-slate-800">
+              {recentRecharges.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-slate-400">
+                  暂时还没有充值记录。
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {recentRecharges.map((record) => (
+                    <div
+                      key={record.id}
+                      className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1fr_auto]"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">
+                          {record.email}
+                        </p>
+                        <p className="mt-1 text-slate-400">
+                          {record.description || "管理员手动充值"}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatTime(record.created_at)}
+                        </p>
+                      </div>
+
+                      <div className="md:text-right">
+                        <p className="font-bold text-cyan-300">
+                          +{record.change_amount.toLocaleString()} 点
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          余额 {record.balance_after.toLocaleString()} 点
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

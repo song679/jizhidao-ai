@@ -88,9 +88,30 @@ export async function GET(request: Request) {
     const targetEmail = requestUrl.searchParams.get("email")?.trim().toLowerCase();
 
     if (!targetEmail) {
+      const { data: recentRecharges, error: rechargeQueryError } =
+        await adminContext.supabaseAdmin
+          .from("point_transactions")
+          .select(
+            "id, email, change_amount, balance_after, description, created_at"
+          )
+          .eq("type", "recharge")
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+      if (rechargeQueryError) {
+        return NextResponse.json(
+          {
+            error: "查询最近充值记录失败",
+            detail: rechargeQueryError.message,
+          },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({
         authorized: true,
         adminEmail: adminContext.adminEmail,
+        recentRecharges: recentRecharges || [],
       });
     }
 
