@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { supabase } from "@/lib/supabase";
@@ -40,6 +41,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [userEmail, setUserEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [points, setPoints] = useState<number>(1000);
   const [activeTool, setActiveTool] = useState("AI 聊天");
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
@@ -103,6 +105,19 @@ export default function ChatPage() {
   setUserEmail(data.email || session.user.email || "");
   setPoints(typeof data.points === "number" ? data.points : 0);
 
+        try {
+          const adminResponse = await fetch("/api/admin/recharge", {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+
+          setIsAdmin(adminResponse.ok);
+        } catch (error) {
+          console.error("检查管理员权限失败：", error);
+          setIsAdmin(false);
+        }
+
         const sessionList = await fetchSessions(session.access_token);
 
         if (sessionList.length > 0) {
@@ -120,11 +135,16 @@ export default function ChatPage() {
     data: { subscription },
   } = supabase.auth.onAuthStateChange((_event, session) => {
     setUserEmail(session?.user?.email || "");
+    if (!session) {
+      setIsAdmin(false);
+    }
   });
 
   return () => {
     subscription.unsubscribe();
   };
+  // This bootstrap intentionally runs once for the initial authenticated session.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
 useEffect(() => {
@@ -132,16 +152,20 @@ useEffect(() => {
   const welcome = params.get("welcome");
 
   if (welcome === "1") {
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "欢迎回来！新用户已赠送 1000 点，可直接开始使用 AI 聊天、写作、办公、电商文案等功能。",
-      },
-    ]);
+    const timer = window.setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "欢迎回来！新用户已赠送 1000 点，可直接开始使用 AI 聊天、写作、办公、电商文案等功能。",
+        },
+      ]);
+    }, 0);
 
     window.history.replaceState({}, "", "/chat");
+
+    return () => window.clearTimeout(timer);
   }
 }, []);
 
@@ -151,7 +175,7 @@ async function logout() {
   window.location.href = "/login";
 }
 
-      function usePromptTemplate(toolName: string, template: string) {
+      function applyPromptTemplate(toolName: string, template: string) {
         setActiveTool(toolName);
         setInput(template);
       }
@@ -407,14 +431,11 @@ async function logout() {
     } catch (error) {
       console.error(error);
 
-      const errorMessage =
-        error instanceof Error ? error.message : "未知错误";
-
       setMessages([
         ...newMessages,
         {
           role: "assistant",
-          content: `抱歉，AI 暂时无法回复。\n\n错误信息：${errorMessage}`,
+          content: "抱歉，当前出现内部技术问题，请联系管理员。",
         },
       ]);
     } finally {
@@ -426,9 +447,9 @@ async function logout() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-6">
         <header className="mb-6 flex items-center justify-between border-b border-slate-800 pb-5">
-          <a href="/" className="text-2xl font-bold tracking-tight">
+          <Link href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
             <a href="/chat" className="text-cyan-300">
@@ -476,6 +497,15 @@ async function logout() {
               充值 / 会员
             </a>
 
+            {isAdmin && (
+              <a
+                href="/admin/recharge"
+                className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 xl:inline-block"
+              >
+                管理充值
+              </a>
+            )}
+
             {userEmail && (
               <span className="hidden text-sm text-slate-300 lg:inline">
                 {userEmail}
@@ -521,7 +551,7 @@ async function logout() {
 
               <button
                 onClick={() =>
-                  usePromptTemplate(
+                  applyPromptTemplate(
                     "写文章",
                     "帮我写一篇文章，主题是：____。要求：结构清晰、语言通俗、适合普通用户阅读，字数控制在 800 字左右。"
                   )
@@ -537,7 +567,7 @@ async function logout() {
 
             <button
               onClick={() =>
-                usePromptTemplate(
+                applyPromptTemplate(
                   "小红书文案",
                   "帮我写一篇小红书文案，产品/主题是：____。要求：标题吸引人，正文像真人分享，带 3-5 个 emoji，最后加几个相关话题标签。"
                 )
@@ -553,7 +583,7 @@ async function logout() {
 
             <button
               onClick={() =>
-                usePromptTemplate(
+                applyPromptTemplate(
                   "电商标题",
                   "帮我生成 10 个电商商品标题，产品是：____。要求：突出卖点，适合电商平台搜索，标题简洁有吸引力。"
                 )
@@ -569,7 +599,7 @@ async function logout() {
 
             <button
               onClick={() =>
-                usePromptTemplate(
+                applyPromptTemplate(
                   "短视频脚本",
                   "帮我写一个短视频脚本，主题是：____。要求：包含开头钩子、分镜内容、口播文案和结尾引导，时长控制在 60 秒左右。"
                 )
@@ -639,7 +669,7 @@ async function logout() {
           </aside>
 
           <section className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60">
-            <div className="flex items-center justify-between border-b border-slate-800 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 p-5">
               <div>
                 <h1 className="text-xl font-bold">{activeTool}</h1>
                 <p className="mt-1 text-sm text-slate-400">
@@ -647,7 +677,35 @@ async function logout() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center rounded-full border border-slate-700 px-3 py-2 text-xs text-slate-300 md:hidden">
+                  <span className="mr-2 shrink-0">模型</span>
+                  <select
+                    value={selectedModelId}
+                    onChange={(event) =>
+                      setSelectedModelId(event.target.value)
+                    }
+                    disabled={loading || modelOptions.length === 0}
+                    className="max-w-40 bg-transparent font-semibold text-white outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {modelOptions.length === 0 ? (
+                      <option className="bg-slate-950 text-white" value="">
+                        加载中
+                      </option>
+                    ) : (
+                      modelOptions.map((option) => (
+                        <option
+                          key={option.id}
+                          className="bg-slate-950 text-white"
+                          value={option.id}
+                        >
+                          {option.label}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+
                 <button
                   onClick={startNewChat}
                   className="rounded-full border border-cyan-400/40 px-4 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-400/10"

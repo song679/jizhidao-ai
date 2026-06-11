@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function PricingPage() {
   const [userEmail, setUserEmail] = useState("");
   const [notice, setNotice] = useState("");
+  const [selectedPlanName, setSelectedPlanName] = useState("");
+  const [copyText, setCopyText] = useState("复制充值信息");
 
   useEffect(() => {
     async function getUser() {
@@ -30,8 +33,9 @@ export default function PricingPage() {
   }, []);
 
   function handlePlanClick(planName: string) {
+    setSelectedPlanName(planName);
     setNotice(
-      `你选择了「${planName}」。当前为测试阶段，暂未接入在线支付。请联系管理员处理充值，并提供你的登录邮箱，管理员确认后会手动为你增加点数。`
+      `你选择了「${planName}」。请把下方充值信息发送给管理员，管理员确认后会手动为你的账号增加点数。`
     );
   }
 
@@ -61,14 +65,40 @@ export default function PricingPage() {
       highlight: false,
     },
   ];
+  const selectedPlan =
+    plans.find((plan) => plan.name === selectedPlanName) || plans[1];
+  const adminWechat =
+    process.env.NEXT_PUBLIC_ADMIN_WECHAT || "请联系项目管理员获取";
+  const adminEmail =
+    process.env.NEXT_PUBLIC_ADMIN_EMAIL || "请联系项目管理员获取";
+  const rechargeMessage = [
+    "极智岛 AI 充值申请",
+    `登录邮箱：${userEmail || "请先登录后填写"}`,
+    `选择套餐：${selectedPlan.name}`,
+    `充值金额：¥${selectedPlan.price}`,
+    `到账点数：${selectedPlan.points}`,
+    "付款截图：已发送/稍后发送",
+  ].join("\n");
+
+  async function copyRechargeMessage() {
+    try {
+      await navigator.clipboard.writeText(rechargeMessage);
+      setCopyText("已复制");
+      window.setTimeout(() => setCopyText("复制充值信息"), 1600);
+    } catch (error) {
+      console.error("复制充值信息失败：", error);
+      setCopyText("复制失败，请手动复制");
+      window.setTimeout(() => setCopyText("复制充值信息"), 2000);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-6xl px-6 py-10">
         <header className="flex items-center justify-between border-b border-slate-800 pb-6">
-          <a href="/" className="text-2xl font-bold tracking-tight">
+          <Link href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
             <a href="/chat" className="hover:text-white">
@@ -117,7 +147,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            极智岛 AI 使用点数计费。测试阶段暂未接入在线支付，如需充值请联系管理员手动处理。
+            极智岛 AI 使用点数计费。测试阶段暂未接入在线支付，请选择套餐后联系管理员手动处理。
           </p>
 
           {notice && (
@@ -170,7 +200,7 @@ export default function PricingPage() {
                     : "border border-slate-700 text-white hover:border-cyan-400/60 hover:text-cyan-300"
                 }`}
               >
-                选择套餐
+                {selectedPlanName === plan.name ? "已选择" : "选择套餐"}
               </button>
             </div>
           ))}
@@ -180,9 +210,9 @@ export default function PricingPage() {
           <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
             <h2 className="text-2xl font-bold">如何充值</h2>
             <div className="mt-5 space-y-4 text-sm leading-7 text-slate-300">
-              <p>1. 先登录网站，确认你用于接收登录链接的邮箱。</p>
-              <p>2. 点击上方套餐按钮，记下你选择的套餐名称。</p>
-              <p>3. 联系管理员，并发送：登录邮箱、套餐名称、付款截图。</p>
+              <p>1. 先登录网站，确认当前账号邮箱。</p>
+              <p>2. 点击上方套餐按钮，页面会自动生成充值信息。</p>
+              <p>3. 复制充值信息，连同付款截图一起发送给管理员。</p>
               <p>4. 管理员确认后，会手动为你的账号增加对应点数。</p>
             </div>
           </div>
@@ -190,14 +220,52 @@ export default function PricingPage() {
           <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-8">
             <h2 className="text-2xl font-bold text-cyan-100">联系管理员</h2>
             <p className="mt-5 text-sm leading-7 text-cyan-50/90">
-              当前为测试阶段，暂未开放自动支付。如需充值，请通过你与管理员约定的微信、邮箱或其他联系方式处理。
+              当前为测试阶段，暂未开放自动支付。充值前请先确认账号邮箱，避免点数加到错误账号。
             </p>
-            <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4 text-sm leading-7 text-cyan-50">
-              <p>请提供：登录邮箱</p>
-              <p>请提供：选择的套餐</p>
-              <p>请提供：付款截图或转账备注</p>
+
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4">
+                <p className="text-cyan-200">管理员微信</p>
+                <p className="mt-1 font-semibold text-white">{adminWechat}</p>
+              </div>
+
+              <div className="rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4">
+                <p className="text-cyan-200">管理员邮箱</p>
+                <p className="mt-1 font-semibold text-white">{adminEmail}</p>
+              </div>
             </div>
           </div>
+        </section>
+
+        <section className="mt-12 rounded-3xl border border-cyan-400/30 bg-slate-900/70 p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">发送给管理员的信息</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-400">
+                选择套餐后复制以下内容，并附上付款截图，管理员会按登录邮箱处理点数。
+              </p>
+            </div>
+
+            <button
+              onClick={copyRechargeMessage}
+              className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+            >
+              {copyText}
+            </button>
+          </div>
+
+          <div className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950 p-5 text-sm leading-7 text-slate-200">
+            {rechargeMessage}
+          </div>
+
+          {!userEmail && (
+            <div className="mt-4 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
+              你当前还没有登录。充值前请先登录，否则管理员无法准确为账号增加点数。
+              <a href="/login" className="ml-2 font-semibold underline">
+                去登录
+              </a>
+            </div>
+          )}
         </section>
 
         <section className="mt-12 rounded-3xl border border-slate-800 bg-slate-900/60 p-8">

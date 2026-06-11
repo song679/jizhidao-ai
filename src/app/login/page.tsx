@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -45,9 +46,9 @@ export default function LoginPage() {
     <main className="min-h-screen bg-slate-950 text-white">
      <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-8">
        <header className="mb-12 flex items-center justify-between border-b border-slate-800 pb-6">
-         <a href="/" className="text-2xl font-bold tracking-tight">
+         <Link href="/" className="text-2xl font-bold tracking-tight">
            极智岛 AI
-         </a>
+         </Link>
 
           <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
            <a href="/chat" className="hover:text-white">
@@ -106,9 +107,9 @@ export default function LoginPage() {
             )}
 
             <div className="flex items-center justify-center gap-4 text-sm">
-              <a href="/" className="text-slate-400 hover:text-white">
+              <Link href="/" className="text-slate-400 hover:text-white">
                 返回首页
-              </a>
+              </Link>
               <span className="text-slate-700">|</span>
               <a href="/chat" className="text-cyan-300 hover:text-cyan-200">
                 进入 AI 聊天
