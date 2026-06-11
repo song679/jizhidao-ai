@@ -13,6 +13,7 @@ type ModelOption = {
   provider: AiProvider;
   model: string;
   displayName: string;
+  pointCost: number;
 };
 
 const SYSTEM_PROMPT = `
@@ -51,6 +52,12 @@ function parseModelList(value: string | undefined, fallback: string) {
   return models && models.length > 0 ? models : [fallback];
 }
 
+function parsePointCost(value: string | undefined, fallback: number) {
+  const pointCost = Number(value);
+
+  return Number.isInteger(pointCost) && pointCost > 0 ? pointCost : fallback;
+}
+
 function getModelOptions(): ModelOption[] {
   const openaiModels = parseModelList(
     process.env.OPENAI_MODEL_OPTIONS,
@@ -60,6 +67,8 @@ function getModelOptions(): ModelOption[] {
     process.env.DEEPSEEK_MODEL_OPTIONS,
     process.env.DEEPSEEK_MODEL || "deepseek-v4-flash"
   );
+  const openaiPointCost = parsePointCost(process.env.OPENAI_POINT_COST, 2);
+  const deepseekPointCost = parsePointCost(process.env.DEEPSEEK_POINT_COST, 1);
 
   return [
     ...openaiModels.map((model) => ({
@@ -67,12 +76,14 @@ function getModelOptions(): ModelOption[] {
       provider: "openai" as const,
       model,
       displayName: "ChatGPT",
+      pointCost: openaiPointCost,
     })),
     ...deepseekModels.map((model) => ({
       id: `deepseek:${model}`,
       provider: "deepseek" as const,
       model,
       displayName: "DeepSeek",
+      pointCost: deepseekPointCost,
     })),
   ];
 }
@@ -337,13 +348,6 @@ export async function POST(request: Request) {
       currentPoints = 1000;
     }
 
-    if (currentPoints <= 0) {
-      return NextResponse.json(
-        { error: "点数不足，请充值后继续使用" },
-        { status: 402 }
-      );
-    }
-
     const body = await request.json();
     const safeMessages = getSafeMessages(body.messages);
 
@@ -364,6 +368,19 @@ export async function POST(request: Request) {
 
     const selectedModel = resolveModelSelection(body);
     const provider = selectedModel.provider;
+    const pointCost = selectedModel.pointCost;
+
+    if (currentPoints < pointCost) {
+      return NextResponse.json(
+        {
+          error: `当前模型每次需要 ${pointCost} 点，余额不足，请充值或切换其他模型`,
+          requiredPoints: pointCost,
+          points: currentPoints,
+        },
+        { status: 402 }
+      );
+    }
+
     const aiResult =
       provider === "openai"
         ? await callOpenAI(safeMessages, selectedModel.model)
@@ -433,7 +450,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const newPoints = currentPoints - 1;
+    const newPoints = currentPoints - pointCost;
 
     const { error: updateError } = await supabaseAdmin
       .from("user_points")
@@ -457,11 +474,10 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         email: user.email,
-        change_amount: -1,
+        change_amount: -pointCost,
         balance_after: newPoints,
         type: "chat",
-        description:
-          provider === "openai" ? "ChatGPT 聊天扣除 1 点" : "AI 聊天扣除 1 点",
+        description: `${selectedModel.displayName} 聊天扣除 ${pointCost} 点`,
       });
 
     if (transactionError) {
@@ -476,6 +492,7 @@ export async function POST(request: Request) {
       model: selectedModel.model,
       modelId: selectedModel.id,
       displayName: selectedModel.displayName,
+      pointCost,
     });
   } catch (error) {
     console.error("Chat API Error:", error);

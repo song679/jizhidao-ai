@@ -8,6 +8,7 @@ type ModelOption = {
   model: string;
   displayName: string;
   label: string;
+  pointCost: number;
 };
 
 function parseModelList(value: string | undefined, fallback: string) {
@@ -19,6 +20,12 @@ function parseModelList(value: string | undefined, fallback: string) {
   return models && models.length > 0 ? models : [fallback];
 }
 
+function parsePointCost(value: string | undefined, fallback: number) {
+  const pointCost = Number(value);
+
+  return Number.isInteger(pointCost) && pointCost > 0 ? pointCost : fallback;
+}
+
 function getModelOptions(): ModelOption[] {
   const openaiModels = parseModelList(
     process.env.OPENAI_MODEL_OPTIONS,
@@ -28,6 +35,8 @@ function getModelOptions(): ModelOption[] {
     process.env.DEEPSEEK_MODEL_OPTIONS,
     process.env.DEEPSEEK_MODEL || "deepseek-v4-flash"
   );
+  const openaiPointCost = parsePointCost(process.env.OPENAI_POINT_COST, 2);
+  const deepseekPointCost = parsePointCost(process.env.DEEPSEEK_POINT_COST, 1);
 
   return [
     ...openaiModels.map((model) => ({
@@ -35,14 +44,16 @@ function getModelOptions(): ModelOption[] {
       provider: "openai" as const,
       model,
       displayName: "ChatGPT",
-      label: `ChatGPT - ${model}`,
+      label: `ChatGPT - ${model}（${openaiPointCost} 点/次）`,
+      pointCost: openaiPointCost,
     })),
     ...deepseekModels.map((model) => ({
       id: `deepseek:${model}`,
       provider: "deepseek" as const,
       model,
       displayName: "DeepSeek",
-      label: `DeepSeek - ${model}`,
+      label: `DeepSeek - ${model}（${deepseekPointCost} 点/次）`,
+      pointCost: deepseekPointCost,
     })),
   ];
 }

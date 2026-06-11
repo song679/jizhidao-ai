@@ -45,7 +45,7 @@ export default function PricingPage() {
       price: "9.9",
       points: "1,000 点",
       desc: "适合轻度体验 AI 聊天、写文案、问问题。",
-      features: ["约 1,000 次基础提问", "适合个人试用", "低成本体验"],
+      features: ["按 1 点模型约 1,000 次", "适合个人试用", "低成本体验"],
       highlight: false,
     },
     {
@@ -53,7 +53,7 @@ export default function PricingPage() {
       price: "29.9",
       points: "5,000 点",
       desc: "适合日常写作、办公、电商、自媒体使用。",
-      features: ["约 5,000 次基础提问", "适合长期使用", "性价比更高"],
+      features: ["按 1 点模型约 5,000 次", "适合长期使用", "性价比更高"],
       highlight: true,
     },
     {
@@ -61,7 +61,7 @@ export default function PricingPage() {
       price: "99",
       points: "20,000 点",
       desc: "适合高频使用、内容创作、电商运营和团队测试。",
-      features: ["约 20,000 次基础提问", "适合高频用户", "后续可用于多模型"],
+      features: ["按 1 点模型约 20,000 次", "适合高频用户", "支持多模型使用"],
       highlight: false,
     },
   ];
@@ -274,7 +274,7 @@ export default function PricingPage() {
             <p>1. 当前为测试阶段，所有套餐主要用于页面展示和小范围试用。</p>
             <p>2. 新用户注册后默认赠送测试点数，可在点数明细页查看流水。</p>
             <p>3. 后续可接入微信、支付宝或 Stripe 支付，实现自动充值。</p>
-            <p>4. 点数消耗规则后续可以按不同 AI 模型单独设置。</p>
+            <p>4. 不同 AI 模型消耗点数不同，具体费用以聊天页模型选择器显示为准。</p>
           </div>
         </section>
       </div>
