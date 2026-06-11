@@ -520,10 +520,10 @@ async function logout() {
 
             {isAdmin && (
               <a
-                href="/admin/recharge"
+                href="/admin/users"
                 className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 xl:inline-block"
               >
-                管理充值
+                用户管理
               </a>
             )}
 

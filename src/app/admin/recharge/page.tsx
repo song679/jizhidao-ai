@@ -60,6 +60,14 @@ export default function AdminRechargePage() {
 
   useEffect(() => {
     async function loadAdmin() {
+      const emailFromQuery = new URLSearchParams(window.location.search).get(
+        "email"
+      );
+
+      if (emailFromQuery) {
+        setTargetEmail(emailFromQuery);
+      }
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -205,12 +213,20 @@ export default function AdminRechargePage() {
             极智岛 AI
           </Link>
 
-          <Link
-            href="/chat"
-            className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
-          >
-            返回聊天
-          </Link>
+          <nav className="flex items-center gap-2">
+            <Link
+              href="/admin/users"
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              用户管理
+            </Link>
+            <Link
+              href="/chat"
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              返回聊天
+            </Link>
+          </nav>
         </header>
 
         <section className="py-12">
