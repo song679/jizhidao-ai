@@ -277,6 +277,13 @@ export default function PricingPage() {
             <p>4. 不同 AI 模型消耗点数不同，具体费用以聊天页模型选择器显示为准。</p>
           </div>
         </section>
+
+        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-500">
+          <span>购买或使用点数前，请阅读相关规则。</span>
+          <Link href="/terms" className="text-cyan-300 hover:text-cyan-200">
+            用户协议
+          </Link>
+        </footer>
       </div>
     </main>
   );

@@ -104,6 +104,17 @@ export default function LoginPage() {
               {loading ? "发送中..." : "发送登录链接"}
             </button>
 
+            <p className="text-center text-xs leading-5 text-slate-500">
+              点击“发送登录链接”即表示你已阅读并同意
+              <Link
+                href="/terms"
+                className="mx-1 text-cyan-300 hover:text-cyan-200"
+              >
+                《用户协议》
+              </Link>
+              。
+            </p>
+
             {message && (
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300">
                 {message}
