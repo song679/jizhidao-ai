@@ -140,6 +140,14 @@ export default function LoginPage() {
 
             <p className="text-center text-xs leading-5 text-slate-500">
               当前为测试阶段，请使用真实可收信邮箱登录。登录链接可能会进入垃圾邮件，请注意查看。
+              充值前请阅读
+              <Link
+                href="/refund"
+                className="ml-1 text-cyan-300 hover:text-cyan-200"
+              >
+                充值与退款说明
+              </Link>
+              。
             </p>
           </div>
         </section>

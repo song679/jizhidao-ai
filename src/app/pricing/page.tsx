@@ -287,6 +287,9 @@ export default function PricingPage() {
             <Link href="/privacy" className="text-cyan-300 hover:text-cyan-200">
               隐私政策
             </Link>
+            <Link href="/refund" className="text-cyan-300 hover:text-cyan-200">
+              充值与退款
+            </Link>
           </div>
         </footer>
       </div>

@@ -149,6 +149,9 @@ export default function TermsPage() {
             <Link href="/privacy" className="hover:text-white">
               隐私政策
             </Link>
+            <Link href="/refund" className="hover:text-white">
+              充值与退款
+            </Link>
             <Link href="/" className="hover:text-white">
               返回首页
             </Link>

@@ -164,6 +164,9 @@ export default function PrivacyPage() {
             <Link href="/terms" className="hover:text-white">
               用户协议
             </Link>
+            <Link href="/refund" className="hover:text-white">
+              充值与退款
+            </Link>
             <Link href="/pricing" className="hover:text-white">
               会员价格
             </Link>
