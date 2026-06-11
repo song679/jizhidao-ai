@@ -280,9 +280,14 @@ export default function PricingPage() {
 
         <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-500">
           <span>购买或使用点数前，请阅读相关规则。</span>
-          <Link href="/terms" className="text-cyan-300 hover:text-cyan-200">
-            用户协议
-          </Link>
+          <div className="flex gap-5">
+            <Link href="/terms" className="text-cyan-300 hover:text-cyan-200">
+              用户协议
+            </Link>
+            <Link href="/privacy" className="text-cyan-300 hover:text-cyan-200">
+              隐私政策
+            </Link>
+          </div>
         </footer>
       </div>
     </main>

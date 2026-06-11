@@ -112,6 +112,13 @@ export default function LoginPage() {
               >
                 《用户协议》
               </Link>
+              和
+              <Link
+                href="/privacy"
+                className="mx-1 text-cyan-300 hover:text-cyan-200"
+              >
+                《隐私政策》
+              </Link>
               。
             </p>
 

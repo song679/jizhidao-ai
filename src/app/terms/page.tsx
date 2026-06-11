@@ -146,6 +146,9 @@ export default function TermsPage() {
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-400">
           <span>极智岛 AI</span>
           <div className="flex gap-5">
+            <Link href="/privacy" className="hover:text-white">
+              隐私政策
+            </Link>
             <Link href="/" className="hover:text-white">
               返回首页
             </Link>

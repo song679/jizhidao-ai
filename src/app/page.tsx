@@ -214,9 +214,14 @@ export default function Home() {
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-500">
           <span>极智岛 AI</span>
-          <Link href="/terms" className="hover:text-white">
-            用户协议
-          </Link>
+          <div className="flex gap-5">
+            <Link href="/terms" className="hover:text-white">
+              用户协议
+            </Link>
+            <Link href="/privacy" className="hover:text-white">
+              隐私政策
+            </Link>
+          </div>
         </footer>
       </section>
     </main>
