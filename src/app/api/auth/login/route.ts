@@ -54,7 +54,10 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json(
-        { error: "登录邮件发送失败，请稍后再试或联系管理员" },
+        {
+          error: "登录邮件发送失败，请稍后再试或联系管理员",
+          diagnosticCode: error.code || `auth_status_${error.status || 500}`,
+        },
         { status: error.status || 500 }
       );
     }
