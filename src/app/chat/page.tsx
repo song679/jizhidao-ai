@@ -50,6 +50,9 @@ export default function ChatPage() {
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
+    null
+  );
   const selectedModel =
     modelOptions.find((option) => option.id === selectedModelId) ||
     modelOptions[0];
@@ -286,38 +289,105 @@ async function logout() {
 }
 
     async function clearChatHistory() {
-  const confirmed = window.confirm("确定要清空聊天记录吗？清空后无法恢复。");
+      if (!currentSessionId) {
+        return;
+      }
 
-  if (!confirmed) {
-    return;
-  }
+      const confirmed = window.confirm(
+        "确定要清空当前会话的聊天记录吗？清空后无法恢复。"
+      );
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+      if (!confirmed) {
+        return;
+      }
 
-  if (!session) {
-    window.location.href = "/login";
-    return;
-  }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-  const response = await fetch("/api/chat/history", {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
+      if (!session) {
+        window.location.href = "/login";
+        return;
+      }
 
-  const data = await response.json();
+      const response = await fetch(
+        `/api/chat/history?session_id=${encodeURIComponent(currentSessionId)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
 
-  if (!response.ok) {
-    console.error(data);
-    alert(data?.error || "清空聊天记录失败");
-    return;
-  }
+      const data = await response.json();
 
-  setMessages(defaultMessages);
-}
+      if (!response.ok) {
+        console.error(data);
+        alert(data?.error || "清空聊天记录失败");
+        return;
+      }
+
+      setMessages(defaultMessages);
+    }
+
+    async function deleteChatSession(sessionItem: ChatSession) {
+      const confirmed = window.confirm(
+        `确定删除会话“${sessionItem.title}”吗？该会话内的消息也会被永久删除。`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingSessionId(sessionItem.id);
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          window.location.href = "/login";
+          return;
+        }
+
+        const response = await fetch(
+          `/api/chat/sessions?session_id=${encodeURIComponent(sessionItem.id)}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data?.error || "删除聊天会话失败");
+        }
+
+        const remainingSessions = sessions.filter(
+          (item) => item.id !== sessionItem.id
+        );
+        setSessions(remainingSessions);
+
+        if (currentSessionId !== sessionItem.id) {
+          return;
+        }
+
+        if (remainingSessions.length > 0) {
+          await loadSessionMessages(remainingSessions[0].id);
+        } else {
+          await createChatSession(session.access_token);
+        }
+      } catch (error) {
+        console.error("删除聊天会话失败：", error);
+        alert(error instanceof Error ? error.message : "删除聊天会话失败");
+      } finally {
+        setDeletingSessionId(null);
+      }
+    }
 
   async function sendMessage() {
   const userText = input.trim();
@@ -674,18 +744,37 @@ async function logout() {
                 <div className="text-xs text-slate-500">暂无历史会话</div>
               ) : (
                 sessions.map((item) => (
-                  <button
+                  <div
                     key={item.id}
-                    onClick={() => loadSessionMessages(item.id)}
-                    className={`w-full truncate rounded-xl px-3 py-2 text-left text-xs ${
+                    className={`flex min-h-9 items-center gap-1 rounded-xl pl-3 pr-1 ${
                       currentSessionId === item.id
                         ? "bg-cyan-400 text-slate-950"
                         : "text-slate-400 hover:bg-slate-800 hover:text-white"
                     }`}
-                    title={item.title}
                   >
-                    {item.title}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => loadSessionMessages(item.id)}
+                      className="min-w-0 flex-1 truncate py-2 text-left text-xs"
+                      title={item.title}
+                    >
+                      {item.title}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteChatSession(item)}
+                      disabled={deletingSessionId === item.id}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base leading-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                        currentSessionId === item.id
+                          ? "text-slate-700 hover:bg-slate-950/10 hover:text-slate-950"
+                          : "text-slate-600 hover:bg-rose-400/10 hover:text-rose-300"
+                      }`}
+                      title="删除此会话"
+                      aria-label={`删除会话 ${item.title}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))
               )}
             </div>

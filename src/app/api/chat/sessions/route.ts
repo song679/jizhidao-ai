@@ -150,3 +150,83 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { error, user, supabaseAdmin } = await getUserFromRequest(request);
+
+    if (error || !user || !supabaseAdmin) {
+      return error;
+    }
+
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get("session_id")?.trim();
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: "缺少要删除的会话标识" },
+        { status: 400 }
+      );
+    }
+
+    const { data: ownedSession, error: sessionQueryError } =
+      await supabaseAdmin
+        .from("chat_sessions")
+        .select("id")
+        .eq("id", sessionId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (sessionQueryError) {
+      return NextResponse.json(
+        { error: "查询聊天会话失败", detail: sessionQueryError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!ownedSession) {
+      return NextResponse.json(
+        { error: "没有找到该聊天会话" },
+        { status: 404 }
+      );
+    }
+
+    const { error: messagesDeleteError } = await supabaseAdmin
+      .from("chat_messages")
+      .delete()
+      .eq("session_id", sessionId)
+      .eq("user_id", user.id);
+
+    if (messagesDeleteError) {
+      return NextResponse.json(
+        { error: "删除会话消息失败", detail: messagesDeleteError.message },
+        { status: 500 }
+      );
+    }
+
+    const { error: sessionDeleteError } = await supabaseAdmin
+      .from("chat_sessions")
+      .delete()
+      .eq("id", sessionId)
+      .eq("user_id", user.id);
+
+    if (sessionDeleteError) {
+      return NextResponse.json(
+        { error: "删除聊天会话失败", detail: sessionDeleteError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      sessionId,
+    });
+  } catch (error) {
+    console.error("Delete Chat Session Error:", error);
+
+    return NextResponse.json(
+      { error: "服务器内部错误，请稍后再试" },
+      { status: 500 }
+    );
+  }
+}
