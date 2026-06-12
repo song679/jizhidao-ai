@@ -77,6 +77,10 @@ export default function ChatPage() {
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelId, setSelectedModelId] = useState("");
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(
+    null
+  );
+  const generationAbortRef = useRef<AbortController | null>(null);
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -431,70 +435,16 @@ async function logout() {
       }
     }
 
-  async function sendMessage() {
-  const userText = input.trim();
-
-  if (!userText || loading) return;
-
-  if (userText.length > MAX_INPUT_LENGTH) {
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content: `单条消息不能超过 ${MAX_INPUT_LENGTH} 个字符，请精简后重试。`,
-      },
-    ]);
-    return;
-  }
-
-  if (!userEmail) {
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content: "请先登录后再使用聊天功能。",
-      },
-    ]);
-    return;
-  }
-
-   if (!hasEnoughPoints) {
-    setMessages([
-      ...messages,
-      {
-        role: "assistant",
-        content: `当前模型每次需要 ${selectedPointCost} 点，你的余额不足。请切换其他模型或前往 [会员价格页](/pricing) 充值。`,
-      },
-    ]);
-    return;
-  }
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content: "登录状态已失效，请重新登录后再使用聊天功能。",
-      },
-    ]);
-    return;
-  }
-
-  const newMessages: Message[] = [
-      ...messages,
-      {
-        role: "user",
-        content: userText,
-      },
-    ];
-
-    setMessages(newMessages);
-    setInput("");
+  async function runChat(
+    chatMessages: Message[],
+    userText: string,
+    regenerate = false
+  ) {
     setLoading(true);
+    setCopiedMessageIndex(null);
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
+    let receivedContent = false;
 
     try {
       const requestId = crypto.randomUUID();
@@ -509,23 +459,25 @@ async function logout() {
 
       const response = await fetch("/api/chat", {
         method: "POST",
+        signal: abortController.signal,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          messages: newMessages,
+          messages: chatMessages,
           sessionId: currentSessionId,
           modelId: selectedModel?.id,
           provider: selectedModel?.provider,
           model: selectedModel?.model,
           requestId,
+          regenerate,
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+
         if (typeof data.points === "number") {
           setPoints(data.points);
         }
@@ -533,7 +485,7 @@ async function logout() {
         if ([400, 402, 404, 409, 413, 429].includes(response.status)) {
           setInput(userText);
           setMessages([
-            ...newMessages,
+            ...chatMessages,
             {
               role: "assistant",
               content: data?.error || "请求暂时无法处理，请稍后再试。",
@@ -542,19 +494,84 @@ async function logout() {
           return;
         }
 
-        throw new Error(data?.detail || data?.error || "请求失败");
+        throw new Error(data?.error || "请求失败");
       }
 
-      if (typeof data.points === "number") {
-        setPoints(data.points);
+      if (!response.body) {
+        throw new Error("浏览器无法读取流式回复");
       }
 
-      if (typeof data.modelId === "string") {
-        setSelectedModelId(data.modelId);
+      setMessages([
+        ...chatMessages,
+        {
+          role: "assistant",
+          content: "",
+        },
+      ]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          const event = JSON.parse(line);
+
+          if (event.type === "meta") {
+            if (typeof event.points === "number") {
+              setPoints(event.points);
+            }
+            if (typeof event.modelId === "string") {
+              setSelectedModelId(event.modelId);
+            }
+            if (event.sessionId && !currentSessionId) {
+              setCurrentSessionId(event.sessionId);
+            }
+          }
+
+          if (event.type === "delta" && typeof event.content === "string") {
+            receivedContent = true;
+            setMessages((prev) => {
+              const next = [...prev];
+              const lastIndex = next.length - 1;
+
+              if (next[lastIndex]?.role === "assistant") {
+                next[lastIndex] = {
+                  ...next[lastIndex],
+                  content: next[lastIndex].content + event.content,
+                };
+              }
+
+              return next;
+            });
+          }
+
+          if (event.type === "done" && typeof event.points === "number") {
+            setPoints(event.points);
+          }
+
+          if (event.type === "error") {
+            throw new Error(event.error || "流式回复失败");
+          }
+        }
       }
 
-      if (data.sessionId && !currentSessionId) {
-        setCurrentSessionId(data.sessionId);
+      if (!receivedContent) {
+        throw new Error("AI 暂时没有生成回复");
       }
 
       const {
@@ -564,27 +581,131 @@ async function logout() {
       if (latestSession) {
         await fetchSessions(latestSession.access_token);
       }
-
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: data.reply || "抱歉，我暂时没有生成回复。",
-        },
-      ]);
     } catch (error) {
-      console.error(error);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        if (!receivedContent) {
+          setMessages([
+            ...chatMessages,
+            {
+              role: "assistant",
+              content: "已停止生成。",
+            },
+          ]);
+        }
+        return;
+      }
 
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: "抱歉，当前出现内部技术问题，请联系管理员。",
-        },
-      ]);
+      console.error(error);
+      setMessages((prev) => {
+        const fallbackMessage = {
+          role: "assistant" as const,
+          content:
+            error instanceof Error
+              ? error.message
+              : "抱歉，当前出现内部技术问题，请联系管理员。",
+        };
+
+        if (receivedContent) {
+          return prev;
+        }
+
+        return [...chatMessages, fallbackMessage];
+      });
     } finally {
+      generationAbortRef.current = null;
       setLoading(false);
     }
+  }
+
+  async function sendMessage() {
+    const userText = input.trim();
+
+    if (!userText || loading) return;
+
+    if (userText.length > MAX_INPUT_LENGTH) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `单条消息不能超过 ${MAX_INPUT_LENGTH} 个字符，请精简后重试。`,
+        },
+      ]);
+      return;
+    }
+
+    if (!userEmail) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "请先登录后再使用聊天功能。",
+        },
+      ]);
+      return;
+    }
+
+    if (!hasEnoughPoints) {
+      setMessages([
+        ...messages,
+        {
+          role: "assistant",
+          content: `当前模型每次需要 ${selectedPointCost} 点，你的余额不足。请切换其他模型或前往 [会员价格页](/pricing) 充值。`,
+        },
+      ]);
+      return;
+    }
+
+    const newMessages: Message[] = [
+      ...messages,
+      {
+        role: "user",
+        content: userText,
+      },
+    ];
+
+    setMessages(newMessages);
+    setInput("");
+    await runChat(newMessages, userText);
+  }
+
+  function stopGeneration() {
+    generationAbortRef.current?.abort();
+  }
+
+  async function copyAssistantMessage(content: string, index: number) {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageIndex(index);
+      window.setTimeout(() => setCopiedMessageIndex(null), 1600);
+    } catch (error) {
+      console.error("复制 AI 回复失败：", error);
+    }
+  }
+
+  async function regenerateLastReply() {
+    if (loading || !hasEnoughPoints) {
+      return;
+    }
+
+    const lastAssistantIndex = messages.findLastIndex(
+      (message) => message.role === "assistant"
+    );
+
+    if (lastAssistantIndex < 1) {
+      return;
+    }
+
+    const chatMessages = messages.slice(0, lastAssistantIndex);
+    const lastUserMessage = [...chatMessages]
+      .reverse()
+      .find((message) => message.role === "user");
+
+    if (!lastUserMessage) {
+      return;
+    }
+
+    setMessages(chatMessages);
+    await runChat(chatMessages, lastUserMessage.content, true);
   }
 
   return (
@@ -990,10 +1111,38 @@ async function logout() {
                     }`}
                   >
                     {message.role === "assistant" ? (
-                      <div className="prose prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-strong:text-white prose-code:rounded prose-code:bg-slate-950 prose-code:px-1 prose-code:py-0.5 prose-code:text-cyan-200">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {message.content}
-                        </ReactMarkdown>
+                      <div>
+                        <div className="prose prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-strong:text-white prose-code:rounded prose-code:bg-slate-950 prose-code:px-1 prose-code:py-0.5 prose-code:text-cyan-200">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content || "正在生成..."}
+                          </ReactMarkdown>
+                        </div>
+                        {message.content && (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-700/70 pt-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                copyAssistantMessage(message.content, index)
+                              }
+                              className="rounded-lg border border-slate-600 px-2.5 py-1 text-xs text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+                            >
+                              {copiedMessageIndex === index
+                                ? "已复制"
+                                : "复制回复"}
+                            </button>
+                            {index === messages.length - 1 && !loading && (
+                              <button
+                                type="button"
+                                onClick={regenerateLastReply}
+                                disabled={!hasEnoughPoints}
+                                title={`重新生成将再次消耗 ${selectedPointCost} 点`}
+                                className="rounded-lg border border-slate-600 px-2.5 py-1 text-xs text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                重新生成
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="whitespace-pre-wrap">
@@ -1004,7 +1153,7 @@ async function logout() {
                 </div>
               ))}
 
-              {loading && (
+              {loading && messages.at(-1)?.role !== "assistant" && (
                 <div className="flex justify-start">
                   <div className="rounded-3xl bg-slate-800 px-5 py-4 text-sm text-slate-300">
                     <div className="flex items-center gap-2">
@@ -1051,13 +1200,27 @@ async function logout() {
                        : "输入你的问题，比如：帮我写一篇小红书文案..."
                  }
                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!userEmail || loading || !hasEnoughPoints}
-                  className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? "思考中..." : !userEmail ? "请先登录" : !hasEnoughPoints ? "点数不足" : "发送"}
-                </button>
+                {loading ? (
+                  <button
+                    type="button"
+                    onClick={stopGeneration}
+                    className="rounded-2xl border border-rose-400/60 bg-rose-400/10 px-5 font-semibold text-rose-200 hover:bg-rose-400/20"
+                  >
+                    停止生成
+                  </button>
+                ) : (
+                  <button
+                    onClick={sendMessage}
+                    disabled={!userEmail || !hasEnoughPoints}
+                    className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {!userEmail
+                      ? "请先登录"
+                      : !hasEnoughPoints
+                        ? "点数不足"
+                        : "发送"}
+                  </button>
+                )}
               </div>
 
               <p className="mt-3 text-xs text-slate-500">

@@ -214,121 +214,69 @@ function getSafeMessages(messages: unknown): {
   };
 }
 
-async function callDeepSeek(messages: ChatMessage[], model: string) {
-  const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+async function openProviderStream(
+  provider: AiProvider,
+  messages: ChatMessage[],
+  model: string,
+  signal: AbortSignal
+) {
+  const isOpenAI = provider === "openai";
+  const apiKey = isOpenAI
+    ? process.env.OPENAI_API_KEY
+    : process.env.DEEPSEEK_API_KEY;
 
-  if (!deepseekApiKey) {
+  if (!apiKey) {
     return {
-      error: NextResponse.json(
-        { error: "服务器未配置 DEEPSEEK_API_KEY" },
-        { status: 500 }
-      ),
-      reply: "",
+      response: null,
+      error: `服务器未配置 ${isOpenAI ? "OPENAI_API_KEY" : "DEEPSEEK_API_KEY"}`,
+      status: 500,
     };
   }
 
-  const response = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    signal: AbortSignal.timeout(60_000),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${deepseekApiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: SYSTEM_PROMPT,
-        },
-        ...messages,
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      stream: false,
-    }),
-  });
+  const response = await fetch(
+    isOpenAI
+      ? "https://api.openai.com/v1/chat/completions"
+      : "https://api.deepseek.com/chat/completions",
+    {
+      method: "POST",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content: SYSTEM_PROMPT,
+          },
+          ...messages,
+        ],
+        temperature: 0.7,
+        ...(isOpenAI
+          ? { max_completion_tokens: 1000 }
+          : { max_tokens: 1000 }),
+        stream: true,
+      }),
+    }
+  );
 
-  if (!response.ok) {
+  if (!response.ok || !response.body) {
     const detail = await response.text();
+    console.error(`${isOpenAI ? "OpenAI" : "DeepSeek"} API 调用失败：`, detail);
 
     return {
-      error: NextResponse.json(
-        {
-          error: "DeepSeek API 调用失败",
-          detail,
-        },
-        { status: response.status }
-      ),
-      reply: "",
+      response: null,
+      error: "当前 AI 模型暂时无法响应，请稍后重试或切换模型",
+      status: response.status || 502,
     };
   }
-
-  const data = await response.json();
-  const reply = data?.choices?.[0]?.message?.content || "";
 
   return {
+    response,
     error: null,
-    reply: reply || "抱歉，我暂时没有生成回复。",
-  };
-}
-
-async function callOpenAI(messages: ChatMessage[], model: string) {
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-
-  if (!openaiApiKey) {
-    return {
-      error: NextResponse.json(
-        { error: "服务器未配置 OPENAI_API_KEY" },
-        { status: 500 }
-      ),
-      reply: "",
-    };
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    signal: AbortSignal.timeout(60_000),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: SYSTEM_PROMPT,
-        },
-        ...messages,
-      ],
-      temperature: 0.7,
-      max_completion_tokens: 1000,
-      stream: false,
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-
-    return {
-      error: NextResponse.json(
-        {
-          error: "OpenAI API 调用失败",
-          detail,
-        },
-        { status: response.status }
-      ),
-      reply: "",
-    };
-  }
-
-  const data = await response.json();
-  const reply = data?.choices?.[0]?.message?.content || "";
-
-  return {
-    error: null,
-    reply: reply || "抱歉，我暂时没有生成回复。",
+    status: 200,
   };
 }
 
@@ -385,6 +333,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const userId = user.id;
+    const userEmail = user.email;
     const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
 
     const body = await request.json();
@@ -412,6 +362,7 @@ export async function POST(request: Request) {
     const provider = selectedModel.provider;
     const pointCost = selectedModel.pointCost;
     const requestId = body.requestId;
+    const isRegeneration = body.regenerate === true;
 
     if (!isUuid(requestId)) {
       return NextResponse.json(
@@ -557,18 +508,7 @@ export async function POST(request: Request) {
       }
     }
 
-    try {
-      const aiResult =
-        provider === "openai"
-          ? await callOpenAI(safeMessages, selectedModel.model)
-          : await callDeepSeek(safeMessages, selectedModel.model);
-
-      if (aiResult.error) {
-        await refundReservation();
-        return aiResult.error;
-      }
-
-      const reply = aiResult.reply;
+    async function completeAndSave(reply: string) {
       const { data: completion, error: completionError } =
         await supabaseAdmin.rpc("complete_chat_request", {
           p_request_id: requestId,
@@ -581,39 +521,64 @@ export async function POST(request: Request) {
           completionError?.message || completion?.status
         );
         await refundReservation();
-
-        return NextResponse.json(
-          { error: "完成点数结算失败，本次预扣点数已退还" },
-          { status: 500 }
-        );
+        throw new Error("完成点数结算失败，本次预扣点数已退还");
       }
 
-      const { error: userMessageError } = await supabaseAdmin
-        .from("chat_messages")
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          role: "user",
-          content: userMessage,
-          session_id: chatSessionId,
-        });
+      let messagesError = null;
 
-      if (userMessageError) {
-        console.error("保存用户消息失败：", userMessageError.message);
+      if (isRegeneration) {
+        const { data: previousAssistant, error: previousAssistantError } =
+          await supabaseAdmin
+            .from("chat_messages")
+            .select("id")
+            .eq("session_id", chatSessionId)
+            .eq("user_id", userId)
+            .eq("role", "assistant")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (previousAssistantError) {
+          messagesError = previousAssistantError;
+        } else if (previousAssistant) {
+          const { error } = await supabaseAdmin
+            .from("chat_messages")
+            .update({ content: reply })
+            .eq("id", previousAssistant.id)
+            .eq("user_id", userId);
+          messagesError = error;
+        } else {
+          const { error } = await supabaseAdmin.from("chat_messages").insert({
+            user_id: userId,
+            email: userEmail,
+            role: "assistant",
+            content: reply,
+            session_id: chatSessionId,
+          });
+          messagesError = error;
+        }
+      } else {
+        const { error } = await supabaseAdmin.from("chat_messages").insert([
+          {
+            user_id: userId,
+            email: userEmail,
+            role: "user",
+            content: userMessage,
+            session_id: chatSessionId,
+          },
+          {
+            user_id: userId,
+            email: userEmail,
+            role: "assistant",
+            content: reply,
+            session_id: chatSessionId,
+          },
+        ]);
+        messagesError = error;
       }
 
-      const { error: assistantMessageError } = await supabaseAdmin
-        .from("chat_messages")
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          role: "assistant",
-          content: reply,
-          session_id: chatSessionId,
-        });
-
-      if (assistantMessageError) {
-        console.error("保存 AI 回复失败：", assistantMessageError.message);
+      if (messagesError) {
+        console.error("保存聊天消息失败：", messagesError.message);
       }
 
       const titleFromMessage =
@@ -625,7 +590,7 @@ export async function POST(request: Request) {
         .from("chat_sessions")
         .select("title")
         .eq("id", chatSessionId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       const nextTitle =
@@ -640,27 +605,180 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", chatSessionId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (sessionUpdateError) {
         console.error("更新聊天会话失败：", sessionUpdateError.message);
       }
 
-      return NextResponse.json({
-        reply,
-        points: completion.points,
-        sessionId: chatSessionId,
-        provider,
-        model: selectedModel.model,
-        modelId: selectedModel.id,
-        displayName: selectedModel.displayName,
-        pointCost,
-        requestId,
-      });
-    } catch (error) {
-      await refundReservation();
-      throw error;
+      return completion.points as number;
     }
+
+    const upstreamAbortController = new AbortController();
+    const timeoutId = setTimeout(() => upstreamAbortController.abort(), 60_000);
+    let providerResult;
+
+    try {
+      providerResult = await openProviderStream(
+        provider,
+        safeMessages,
+        selectedModel.model,
+        upstreamAbortController.signal
+      );
+    } catch (error) {
+      clearTimeout(timeoutId);
+      await refundReservation();
+      console.error("连接 AI 流式服务失败：", error);
+      return NextResponse.json(
+        { error: "当前 AI 模型暂时无法响应，请稍后重试或切换模型" },
+        { status: 502 }
+      );
+    }
+
+    if (!providerResult.response) {
+      clearTimeout(timeoutId);
+      await refundReservation();
+      return NextResponse.json(
+        { error: providerResult.error },
+        { status: providerResult.status }
+      );
+    }
+
+    const encoder = new TextEncoder();
+    const providerReader = providerResult.response.body!.getReader();
+    let clientCancelled = false;
+
+    function encodeEvent(event: Record<string, unknown>) {
+      return encoder.encode(`${JSON.stringify(event)}\n`);
+    }
+
+    const responseStream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        let reply = "";
+        let buffer = "";
+        let finalized = false;
+
+        const enqueue = (event: Record<string, unknown>) => {
+          if (!clientCancelled) {
+            controller.enqueue(encodeEvent(event));
+          }
+        };
+
+        enqueue({
+          type: "meta",
+          points: reservation.points,
+          sessionId: chatSessionId,
+          provider,
+          model: selectedModel.model,
+          modelId: selectedModel.id,
+          displayName: selectedModel.displayName,
+          pointCost,
+          requestId,
+        });
+
+        try {
+          const decoder = new TextDecoder();
+          let streamFinished = false;
+
+          while (!streamFinished) {
+            const { done, value } = await providerReader.read();
+
+            if (done) {
+              break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const blocks = buffer.split(/\r?\n\r?\n/);
+            buffer = blocks.pop() || "";
+
+            for (const block of blocks) {
+              const data = block
+                .split(/\r?\n/)
+                .filter((line) => line.startsWith("data:"))
+                .map((line) => line.slice(5).trim())
+                .join("");
+
+              if (!data) {
+                continue;
+              }
+
+              if (data === "[DONE]") {
+                streamFinished = true;
+                break;
+              }
+
+              const payload = JSON.parse(data);
+              const delta = payload?.choices?.[0]?.delta?.content;
+
+              if (typeof delta === "string" && delta) {
+                reply += delta;
+                enqueue({ type: "delta", content: delta });
+              }
+            }
+          }
+
+          if (!reply.trim()) {
+            throw new Error("AI 未生成有效回复");
+          }
+
+          const points = await completeAndSave(reply);
+          finalized = true;
+          enqueue({
+            type: "done",
+            points,
+            sessionId: chatSessionId,
+            stopped: false,
+          });
+        } catch (error) {
+          const stopped =
+            upstreamAbortController.signal.aborted || clientCancelled;
+
+          if (reply.trim()) {
+            try {
+              const points = await completeAndSave(reply);
+              finalized = true;
+              enqueue({
+                type: "done",
+                points,
+                sessionId: chatSessionId,
+                stopped,
+              });
+            } catch (finalizeError) {
+              console.error("保存中断的流式回复失败：", finalizeError);
+            }
+          } else if (!finalized) {
+            await refundReservation();
+          }
+
+          if (!clientCancelled && !reply.trim()) {
+            console.error("流式 AI 回复失败：", error);
+            enqueue({
+              type: "error",
+              error: "当前出现内部技术问题，请稍后重试或联系管理员",
+            });
+          }
+        } finally {
+          clearTimeout(timeoutId);
+          providerReader.releaseLock();
+
+          if (!clientCancelled) {
+            controller.close();
+          }
+        }
+      },
+      cancel() {
+        clientCancelled = true;
+        upstreamAbortController.abort();
+      },
+    });
+
+    return new Response(responseStream, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, max-age=0",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (error) {
     console.error("Chat API Error:", error);
 
