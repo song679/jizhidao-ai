@@ -3,12 +3,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { parsePointDescription } from "@/lib/point-description";
 
 type RechargeRecord = {
   id: string;
   email: string;
   change_amount: number;
   balance_after: number;
+  type: string;
   description: string | null;
   created_at: string;
 };
@@ -447,43 +449,54 @@ export default function AdminRechargePage() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-800">
-                  {recentRecharges.map((record) => (
-                    <div
-                      key={record.id}
-                      className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1fr_auto]"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-white">
-                          {record.email}
-                        </p>
-                        <p className="mt-1 text-slate-400">
-                          {record.description ||
-                            (record.change_amount >= 0
-                              ? "管理员手动充值"
-                              : "管理员手动扣减")}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {formatTime(record.created_at)}
-                        </p>
-                      </div>
+                  {recentRecharges.map((record) => {
+                    const parsedDescription = parsePointDescription(
+                      record.description
+                    );
 
-                      <div className="md:text-right">
-                        <p
-                          className={`font-bold ${
-                            record.change_amount >= 0
-                              ? "text-cyan-300"
-                              : "text-rose-300"
-                          }`}
-                        >
-                          {record.change_amount >= 0 ? "+" : ""}
-                          {record.change_amount.toLocaleString()} 点
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          余额 {record.balance_after.toLocaleString()} 点
-                        </p>
+                    return (
+                      <div
+                        key={record.id}
+                        className="grid gap-3 px-5 py-4 text-sm md:grid-cols-[1fr_auto]"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-white">
+                            {record.email}
+                          </p>
+                          <p className="mt-1 text-slate-400">
+                            {parsedDescription.note ||
+                              (record.change_amount >= 0
+                                ? "管理员手动充值"
+                                : "管理员手动扣减")}
+                          </p>
+                          {parsedDescription.adminEmail && (
+                            <p className="mt-1 text-xs text-slate-500">
+                              操作管理员：{parsedDescription.adminEmail}
+                            </p>
+                          )}
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatTime(record.created_at)}
+                          </p>
+                        </div>
+
+                        <div className="md:text-right">
+                          <p
+                            className={`font-bold ${
+                              record.change_amount >= 0
+                                ? "text-cyan-300"
+                                : "text-rose-300"
+                            }`}
+                          >
+                            {record.change_amount >= 0 ? "+" : ""}
+                            {record.change_amount.toLocaleString()} 点
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            余额 {record.balance_after.toLocaleString()} 点
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

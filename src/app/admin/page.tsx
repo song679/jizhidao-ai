@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { parsePointDescription } from "@/lib/point-description";
 
 type DashboardData = {
   adminEmail: string;
@@ -320,8 +321,16 @@ export default function AdminDashboardPage() {
                     <td className="px-4 py-4">
                       {transactionLabels[item.type] || item.type}
                     </td>
-                    <td className="max-w-60 truncate px-4 py-4 text-slate-400">
-                      {item.description || "无说明"}
+                    <td className="max-w-60 px-4 py-4 text-slate-400">
+                      <span className="block truncate">
+                        {parsePointDescription(item.description).note ||
+                          "无说明"}
+                      </span>
+                      {parsePointDescription(item.description).adminEmail && (
+                        <span className="mt-1 block truncate text-xs text-slate-600">
+                          {parsePointDescription(item.description).adminEmail}
+                        </span>
+                      )}
                     </td>
                     <td
                       className={`px-4 py-4 text-right font-bold ${

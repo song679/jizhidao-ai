@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { parsePointDescription } from "@/lib/point-description";
 
 type Transaction = {
   id: string;
@@ -332,7 +333,8 @@ export default function AccountPage() {
                           transaction.type}
                       </p>
                       <p className="mt-1 truncate text-slate-400">
-                        {transaction.description || "点数变动"}
+                        {parsePointDescription(transaction.description).note ||
+                          "点数变动"}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
                         {formatTime(transaction.created_at)}

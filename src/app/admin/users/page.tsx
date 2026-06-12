@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { parsePointDescription } from "@/lib/point-description";
 
 type UserAccount = {
   id: string;
@@ -355,7 +356,7 @@ export default function AdminUsersPage() {
                       )}`}
                       className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-300"
                     >
-                      为此用户充值
+                      调整此用户点数
                     </Link>
                   </div>
                 </div>
@@ -387,8 +388,20 @@ export default function AdminUsersPage() {
                                 transaction.type}
                             </p>
                             <p className="mt-1 truncate text-slate-400">
-                              {transaction.description || "无说明"}
+                              {parsePointDescription(transaction.description)
+                                .note || "无说明"}
                             </p>
+                            {parsePointDescription(transaction.description)
+                              .adminEmail && (
+                              <p className="mt-1 truncate text-xs text-slate-600">
+                                操作管理员：
+                                {
+                                  parsePointDescription(
+                                    transaction.description
+                                  ).adminEmail
+                                }
+                              </p>
+                            )}
                             <p className="mt-1 text-xs text-slate-500">
                               {formatTime(transaction.created_at)}
                             </p>

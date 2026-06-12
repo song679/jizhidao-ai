@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
+import { createAdminPointDescription } from "@/lib/point-description";
 
 export async function GET(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
         await adminContext.supabaseAdmin
           .from("point_transactions")
           .select(
-            "id, email, change_amount, balance_after, description, created_at"
+            "id, email, change_amount, balance_after, type, description, created_at"
           )
           .in("type", ["recharge", "deduction"])
           .order("created_at", { ascending: false })
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
 
     if (!Number.isInteger(amount) || amount <= 0 || amount > 1_000_000) {
       return NextResponse.json(
-        { error: "充值点数必须是 1 至 1,000,000 的整数" },
+        { error: "调整点数必须是 1 至 1,000,000 的整数" },
         { status: 400 }
       );
     }
@@ -229,6 +230,10 @@ export async function POST(request: Request) {
     const previousPoints = targetPoints.points ?? 0;
     const changeAmount = operation === "deduct" ? -amount : amount;
     const nextPoints = previousPoints + changeAmount;
+    const auditDescription = createAdminPointDescription(
+      adminContext.adminEmail,
+      note
+    );
 
     if (nextPoints < 0) {
       return NextResponse.json(
@@ -275,7 +280,7 @@ export async function POST(request: Request) {
         change_amount: changeAmount,
         balance_after: nextPoints,
         type: operation === "deduct" ? "deduction" : "recharge",
-        description: note,
+        description: auditDescription,
       });
 
     if (transactionError) {

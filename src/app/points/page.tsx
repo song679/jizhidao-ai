@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { parsePointDescription } from "@/lib/point-description";
 
 type Transaction = {
   id: string;
@@ -193,7 +194,8 @@ export default function PointsPage() {
                         </div>
 
                         <p className="mt-2 text-slate-400">
-                          {item.description || "点数变动"}
+                          {parsePointDescription(item.description).note ||
+                            "点数变动"}
                         </p>
 
                         <p className="mt-2 text-xs text-slate-500">
