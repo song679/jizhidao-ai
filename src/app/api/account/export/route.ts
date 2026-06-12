@@ -53,8 +53,13 @@ export async function GET(request: Request) {
       },
     });
 
-    const [pointsResult, transactionsResult, sessionsResult, messagesResult] =
-      await Promise.all([
+    const [
+      pointsResult,
+      transactionsResult,
+      sessionsResult,
+      messagesResult,
+      ordersResult,
+    ] = await Promise.all([
         supabaseAdmin
           .from("user_points")
           .select("email, points")
@@ -80,13 +85,25 @@ export async function GET(request: Request) {
           .eq("user_id", user.id)
           .order("created_at", { ascending: true })
           .limit(5000),
+        supabaseAdmin
+          .from("recharge_orders")
+          .select(
+            "order_no, plan_name, amount_cents, points, status, payment_channel, created_at, paid_at"
+          )
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true })
+          .limit(5000),
       ]);
 
+    const ordersTableMissing =
+      ordersResult.error?.code === "42P01" ||
+      ordersResult.error?.code === "PGRST205";
     const queryError =
       pointsResult.error ||
       transactionsResult.error ||
       sessionsResult.error ||
-      messagesResult.error;
+      messagesResult.error ||
+      (ordersTableMissing ? null : ordersResult.error);
 
     if (queryError) {
       console.error("导出个人数据查询失败：", queryError.message);
@@ -118,6 +135,7 @@ export async function GET(request: Request) {
       point_transactions: transactionsResult.data || [],
       chat_sessions: sessionsResult.data || [],
       chat_messages: messagesResult.data || [],
+      recharge_orders: ordersTableMissing ? [] : ordersResult.data || [],
     };
 
     const date = exportedAt.toISOString().slice(0, 10);

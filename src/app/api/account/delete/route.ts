@@ -83,6 +83,7 @@ export async function DELETE(request: Request) {
       { table: "chat_messages", column: "user_id" },
       { table: "chat_sessions", column: "user_id" },
       { table: "chat_request_ledger", column: "user_id" },
+      { table: "recharge_orders", column: "user_id" },
       { table: "point_transactions", column: "user_id" },
       { table: "user_points", column: "id" },
     ];
@@ -92,6 +93,13 @@ export async function DELETE(request: Request) {
         .from(target.table)
         .delete()
         .eq(target.column, user.id);
+
+      if (
+        target.table === "recharge_orders" &&
+        (error?.code === "42P01" || error?.code === "PGRST205")
+      ) {
+        continue;
+      }
 
       if (error) {
         console.error(`删除 ${target.table} 数据失败：`, error.message);

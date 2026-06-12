@@ -237,6 +237,12 @@ export default function AdminRechargePage() {
               用户管理
             </Link>
             <Link
+              href="/admin/orders"
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+            >
+              充值订单
+            </Link>
+            <Link
               href="/admin/transactions"
               className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
             >

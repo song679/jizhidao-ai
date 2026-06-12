@@ -3,12 +3,31 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import {
+  formatPlanPrice,
+  rechargePlans,
+} from "@/lib/recharge-plans";
+
+type RechargeOrder = {
+  id: string;
+  order_no: string;
+  plan_id: string;
+  plan_name: string;
+  amount_cents: number;
+  points: number;
+  status: string;
+  created_at: string;
+  paid_at?: string | null;
+};
 
 export default function PricingPage() {
   const [userEmail, setUserEmail] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedPlanName, setSelectedPlanName] = useState("");
   const [copyText, setCopyText] = useState("复制充值信息");
+  const [currentOrder, setCurrentOrder] = useState<RechargeOrder | null>(null);
+  const [orders, setOrders] = useState<RechargeOrder[]>([]);
+  const [orderLoading, setOrderLoading] = useState(false);
 
   useEffect(() => {
     async function getUser() {
@@ -17,6 +36,19 @@ export default function PricingPage() {
       } = await supabase.auth.getSession();
 
       setUserEmail(session?.user?.email || "");
+
+      if (session) {
+        const response = await fetch("/api/orders", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && Array.isArray(data.orders)) {
+          setOrders(data.orders);
+        }
+      }
     }
 
     getUser();
@@ -32,39 +64,72 @@ export default function PricingPage() {
     };
   }, []);
 
-  function handlePlanClick(planName: string) {
-    setSelectedPlanName(planName);
-    setNotice(
-      `你选择了「${planName}」。请把下方充值信息发送给管理员，管理员确认后会手动为你的账号增加点数。`
-    );
+  async function handlePlanClick(planId: string) {
+    const plan = rechargePlans.find((item) => item.id === planId);
+
+    if (!plan) return;
+
+    setSelectedPlanName(plan.name);
+    setCurrentOrder(null);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      setNotice(`你选择了「${plan.name}」。请先登录后创建充值订单。`);
+      return;
+    }
+
+    setOrderLoading(true);
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || "创建充值订单失败");
+      }
+
+      setCurrentOrder(data.order);
+      setOrders((prev) => [
+        data.order,
+        ...prev.filter((item) => item.id !== data.order.id),
+      ]);
+      setNotice(
+        `${data.reused ? "已找到待处理订单" : "订单已创建"}：${data.order.order_no}。请把下方充值信息和付款截图发送给管理员。`
+      );
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "创建充值订单失败，请稍后重试"
+      );
+    } finally {
+      setOrderLoading(false);
+    }
   }
 
-  const plans = [
-    {
-      name: "体验包",
-      price: "9.9",
-      points: "1,000 点",
-      desc: "适合轻度体验 AI 聊天、写文案、问问题。",
-      features: ["按 1 点模型约 1,000 次", "适合个人试用", "低成本体验"],
-      highlight: false,
-    },
-    {
-      name: "标准包",
-      price: "29.9",
-      points: "5,000 点",
-      desc: "适合日常写作、办公、电商、自媒体使用。",
-      features: ["按 1 点模型约 5,000 次", "适合长期使用", "性价比更高"],
-      highlight: true,
-    },
-    {
-      name: "进阶包",
-      price: "99",
-      points: "20,000 点",
-      desc: "适合高频使用、内容创作、电商运营和团队测试。",
-      features: ["按 1 点模型约 20,000 次", "适合高频用户", "支持多模型使用"],
-      highlight: false,
-    },
-  ];
+  const plans = rechargePlans.map((plan) => ({
+    ...plan,
+    price: formatPlanPrice(plan.priceCents),
+    pointsLabel: `${plan.points.toLocaleString()} 点`,
+    desc: plan.description,
+    features: [
+      `按 1 点模型约 ${plan.points.toLocaleString()} 次`,
+      plan.id === "starter" ? "适合个人试用" : "适合长期使用",
+      plan.id === "advanced" ? "支持多模型使用" : "点数明细可查",
+    ],
+    highlight: plan.highlighted,
+  }));
   const selectedPlan =
     plans.find((plan) => plan.name === selectedPlanName) || plans[1];
   const adminWechat =
@@ -76,7 +141,8 @@ export default function PricingPage() {
     `登录邮箱：${userEmail || "请先登录后填写"}`,
     `选择套餐：${selectedPlan.name}`,
     `充值金额：¥${selectedPlan.price}`,
-    `到账点数：${selectedPlan.points}`,
+    `到账点数：${selectedPlan.pointsLabel}`,
+    `订单编号：${currentOrder?.order_no || "选择套餐后自动生成"}`,
     "付款截图：已发送/稍后发送",
   ].join("\n");
 
@@ -183,7 +249,9 @@ export default function PricingPage() {
 
               <div className="mt-4 rounded-2xl bg-slate-950 p-4">
                 <p className="text-sm text-slate-400">获得点数</p>
-                <p className="mt-1 text-2xl font-bold text-cyan-300">{plan.points}</p>
+                <p className="mt-1 text-2xl font-bold text-cyan-300">
+                  {plan.pointsLabel}
+                </p>
               </div>
 
               <ul className="mt-8 space-y-3 text-sm text-slate-300">
@@ -193,14 +261,19 @@ export default function PricingPage() {
               </ul>
 
               <button
-                onClick={() => handlePlanClick(plan.name)}
+                onClick={() => handlePlanClick(plan.id)}
+                disabled={orderLoading}
                 className={`mt-8 w-full rounded-2xl px-5 py-4 font-bold ${
                   plan.highlight
                     ? "bg-cyan-400 text-slate-950 hover:bg-cyan-300"
                     : "border border-slate-700 text-white hover:border-cyan-400/60 hover:text-cyan-300"
                 }`}
               >
-                {selectedPlanName === plan.name ? "已选择" : "选择套餐"}
+                {orderLoading && selectedPlanName === plan.name
+                  ? "正在创建订单..."
+                  : selectedPlanName === plan.name
+                    ? "已选择"
+                    : "选择套餐"}
               </button>
             </div>
           ))}
@@ -267,6 +340,71 @@ export default function PricingPage() {
             </div>
           )}
         </section>
+
+        {userEmail && (
+          <section className="mt-12 rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold">我的充值订单</h2>
+                <p className="mt-2 text-sm text-slate-400">
+                  管理员确认到账后，订单状态和点数余额会同步更新。
+                </p>
+              </div>
+              <span className="text-xs text-slate-500">最近 20 条</span>
+            </div>
+
+            <div className="mt-6 divide-y divide-slate-800 border-y border-slate-800">
+              {orders.length === 0 ? (
+                <p className="py-8 text-sm text-slate-400">
+                  暂时没有充值订单，选择上方套餐即可创建。
+                </p>
+              ) : (
+                orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="grid gap-3 py-4 text-sm md:grid-cols-[1fr_auto]"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold">
+                        {order.plan_name} · {order.points.toLocaleString()} 点
+                      </p>
+                      <p className="mt-1 break-all text-xs text-slate-500">
+                        订单号：{order.order_no}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {new Date(order.created_at).toLocaleString("zh-CN", {
+                          hour12: false,
+                        })}
+                      </p>
+                    </div>
+                    <div className="md:text-right">
+                      <p className="font-bold text-cyan-300">
+                        ¥{formatPlanPrice(order.amount_cents)}
+                      </p>
+                      <p
+                        className={`mt-1 text-xs font-semibold ${
+                          order.status === "paid"
+                            ? "text-emerald-300"
+                            : order.status === "pending"
+                              ? "text-amber-300"
+                              : "text-slate-400"
+                        }`}
+                      >
+                        {order.status === "paid"
+                          ? "已到账"
+                          : order.status === "pending"
+                            ? "待管理员确认"
+                            : order.status === "cancelled"
+                              ? "已取消"
+                              : "已退款"}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="mt-12 rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
           <h2 className="text-2xl font-bold">说明</h2>
