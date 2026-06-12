@@ -1,12 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [accountDeleted, setAccountDeleted] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setAccountDeleted(
+        new URLSearchParams(window.location.search).get("account_deleted") ===
+          "1"
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   async function handleLogin() {
     const userEmail = email.trim();
@@ -73,6 +85,11 @@ export default function LoginPage() {
 
       <div className="flex flex-1 items-center justify-center">
         <section className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl">
+          {accountDeleted && (
+            <div className="mb-5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+              账号及相关数据已永久删除。
+            </div>
+          )}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-5 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-300">
               邮箱安全登录

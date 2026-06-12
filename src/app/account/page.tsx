@@ -29,6 +29,9 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [deletePanelOpen, setDeletePanelOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
@@ -145,6 +148,54 @@ export default function AccountPage() {
       setMessage(error instanceof Error ? error.message : "导出个人数据失败");
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (
+      !email ||
+      deleteConfirmation.trim().toLowerCase() !== email.toLowerCase()
+    ) {
+      setMessage("请输入当前登录邮箱以确认注销账号。");
+      return;
+    }
+
+    setDeleting(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.assign("/login");
+        return;
+      }
+
+      const response = await fetch("/api/account/delete", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: deleteConfirmation,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || "注销账号失败");
+      }
+
+      await supabase.auth.signOut();
+      window.location.assign("/login?account_deleted=1");
+    } catch (error) {
+      console.error("注销账号失败：", error);
+      setMessage(error instanceof Error ? error.message : "注销账号失败");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -292,6 +343,67 @@ export default function AccountPage() {
                 >
                   {exporting ? "正在生成..." : "导出我的数据"}
                 </button>
+              </div>
+              <div className="mt-6 rounded-lg border border-rose-400/30 bg-rose-400/5 p-4">
+                <p className="text-sm font-semibold text-rose-200">注销账号</p>
+                <p className="mt-2 text-xs leading-6 text-slate-400">
+                  注销后，账号、剩余点数、点数流水和聊天记录将被永久删除，且无法恢复。建议先导出个人数据。
+                </p>
+
+                {!deletePanelOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setDeletePanelOpen(true)}
+                    className="mt-4 rounded-lg border border-rose-400/40 px-4 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-400/10"
+                  >
+                    申请注销账号
+                  </button>
+                ) : (
+                  <div className="mt-4">
+                    <label
+                      htmlFor="delete-confirmation"
+                      className="block text-xs font-semibold text-slate-300"
+                    >
+                      输入当前邮箱确认：{email}
+                    </label>
+                    <input
+                      id="delete-confirmation"
+                      type="email"
+                      value={deleteConfirmation}
+                      onChange={(event) =>
+                        setDeleteConfirmation(event.target.value)
+                      }
+                      autoComplete="off"
+                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-rose-400"
+                      placeholder="请输入当前登录邮箱"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={deleteAccount}
+                        disabled={
+                          deleting ||
+                          deleteConfirmation.trim().toLowerCase() !==
+                            email.toLowerCase()
+                        }
+                        className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deleting ? "正在注销..." : "永久删除账号"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeletePanelOpen(false);
+                          setDeleteConfirmation("");
+                        }}
+                        disabled={deleting}
+                        className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:text-white disabled:opacity-50"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <button
                 type="button"
