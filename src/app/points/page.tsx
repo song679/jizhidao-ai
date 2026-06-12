@@ -58,6 +58,8 @@ export default function PointsPage() {
     if (type === "chat") return "AI聊天";
     if (type === "recharge") return "充值";
     if (type === "gift") return "赠送";
+    if (type === "refund") return "退还";
+    if (type === "deduction") return "管理员扣减";
     return type;
   }
 

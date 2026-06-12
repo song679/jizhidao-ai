@@ -18,6 +18,7 @@ const transactionLabels: Record<string, string> = {
   recharge: "充值",
   refund: "退还",
   gift: "赠送",
+  deduction: "管理员扣减",
 };
 
 export default function AccountPage() {

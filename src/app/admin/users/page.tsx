@@ -25,6 +25,7 @@ const transactionLabels: Record<string, string> = {
   recharge: "充值",
   refund: "退还",
   gift: "赠送",
+  deduction: "管理员扣减",
 };
 
 export default function AdminUsersPage() {
@@ -173,7 +174,7 @@ export default function AdminUsersPage() {
               href="/admin/recharge"
               className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
             >
-              充值管理
+              点数管理
             </Link>
             <Link
               href="/chat"

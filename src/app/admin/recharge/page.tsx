@@ -13,6 +13,8 @@ type RechargeRecord = {
   created_at: string;
 };
 
+type PointOperation = "add" | "deduct";
+
 const rechargePresets = [
   { name: "体验包", amount: 1000 },
   { name: "标准包", amount: 5000 },
@@ -26,6 +28,7 @@ export default function AdminRechargePage() {
   const [targetEmail, setTargetEmail] = useState("");
   const [accountPoints, setAccountPoints] = useState<number | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [operation, setOperation] = useState<PointOperation>("add");
   const [amount, setAmount] = useState("1000");
   const [note, setNote] = useState("管理员手动充值");
   const [loading, setLoading] = useState(false);
@@ -153,7 +156,9 @@ export default function AdminRechargePage() {
     setSuccess(false);
 
     const confirmed = window.confirm(
-      `确定要为 ${targetEmail.trim()} 增加 ${amount} 点吗？`
+      `确定要为 ${targetEmail.trim()} ${
+        operation === "deduct" ? "扣减" : "增加"
+      } ${amount} 点吗？此操作会写入用户点数流水。`
     );
 
     if (!confirmed) {
@@ -181,6 +186,7 @@ export default function AdminRechargePage() {
         body: JSON.stringify({
           email: targetEmail,
           amount: Number(amount),
+          operation,
           note,
         }),
       });
@@ -193,7 +199,9 @@ export default function AdminRechargePage() {
 
       setSuccess(true);
       setMessage(
-        `充值成功：${data.email} 增加 ${data.addedPoints} 点，当前余额 ${data.points} 点。`
+        `操作成功：${data.email} ${
+          data.changeAmount >= 0 ? "增加" : "扣减"
+        } ${Math.abs(data.changeAmount)} 点，当前余额 ${data.points} 点。`
       );
       setAccountPoints(data.points);
       await loadRecentRecharges(session.access_token);
@@ -237,7 +245,7 @@ export default function AdminRechargePage() {
 
         <section className="py-12">
           <p className="text-sm font-semibold text-cyan-300">管理员工具</p>
-          <h1 className="mt-3 text-4xl font-bold">手动充值点数</h1>
+          <h1 className="mt-3 text-4xl font-bold">点数管理</h1>
           <p className="mt-4 text-sm text-slate-400">
             当前登录账号：
             {accessChecking ? "正在检查管理员权限..." : adminEmail || "未授权"}
@@ -254,6 +262,55 @@ export default function AdminRechargePage() {
             className="border-y border-slate-800 py-8"
           >
             <div className="grid gap-6 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <span className="mb-2 block text-sm font-semibold text-slate-300">
+                  操作类型
+                </span>
+                <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-2">
+                  {[
+                    {
+                      id: "add" as const,
+                      label: "增加点数",
+                      note: "充值、赠送或运营补偿",
+                    },
+                    {
+                      id: "deduct" as const,
+                      label: "扣减点数",
+                      note: "退款扣回或误充值纠正",
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setOperation(item.id);
+                        setNote(
+                          item.id === "deduct"
+                            ? "管理员手动扣减"
+                            : "管理员手动充值"
+                        );
+                      }}
+                      className={`rounded-lg px-4 py-3 text-left ${
+                        operation === item.id
+                          ? "bg-cyan-400 text-slate-950"
+                          : "text-slate-300 hover:bg-slate-800"
+                      }`}
+                    >
+                      <strong className="block text-sm">{item.label}</strong>
+                      <span
+                        className={`mt-1 block text-xs ${
+                          operation === item.id
+                            ? "text-slate-800"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {item.note}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <label className="md:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-slate-300">
                   用户登录邮箱
@@ -283,7 +340,7 @@ export default function AdminRechargePage() {
 
               <label>
                 <span className="mb-2 block text-sm font-semibold text-slate-300">
-                  增加点数
+                  {operation === "deduct" ? "扣减点数" : "增加点数"}
                 </span>
                 <input
                   type="number"
@@ -295,8 +352,9 @@ export default function AdminRechargePage() {
                   required
                   className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                 />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {rechargePresets.map((preset) => (
+                {operation === "add" && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {rechargePresets.map((preset) => (
                     <button
                       key={preset.name}
                       type="button"
@@ -308,20 +366,25 @@ export default function AdminRechargePage() {
                     >
                       {preset.name} · {preset.amount.toLocaleString()} 点
                     </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </label>
 
               <label>
                 <span className="mb-2 block text-sm font-semibold text-slate-300">
-                  充值说明
+                  操作说明
                 </span>
                 <input
                   type="text"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   maxLength={200}
-                  placeholder="例如：标准包充值"
+                  placeholder={
+                    operation === "deduct"
+                      ? "例如：退款后扣回未使用点数"
+                      : "例如：标准包充值"
+                  }
                   className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </label>
@@ -353,14 +416,16 @@ export default function AdminRechargePage() {
                 ? "正在处理..."
                 : accountPoints === null
                   ? "请先查询并确认用户账号"
-                  : `确认增加点数（当前 ${accountPoints} 点）`}
+                  : `确认${
+                      operation === "deduct" ? "扣减" : "增加"
+                    }点数（当前 ${accountPoints} 点）`}
             </button>
           </form>
         )}
 
         <section className="py-8 text-sm leading-7 text-slate-400">
-          <p>充值成功后，系统会同步更新用户余额并写入点数明细。</p>
-          <p>提交前请再次核对用户邮箱和充值点数，避免加错账号。</p>
+          <p>操作成功后，系统会同步更新用户余额并写入点数明细。</p>
+          <p>扣减点数不会允许余额变成负数，提交前请再次核对用户邮箱、金额和说明。</p>
         </section>
 
         {authorized && (
@@ -368,9 +433,9 @@ export default function AdminRechargePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-cyan-300">
-                  充值流水
+                  点数调整流水
                 </p>
-                <h2 className="mt-2 text-2xl font-bold">最近充值记录</h2>
+                <h2 className="mt-2 text-2xl font-bold">最近管理操作</h2>
               </div>
               <span className="text-xs text-slate-500">最多显示 20 条</span>
             </div>
@@ -378,7 +443,7 @@ export default function AdminRechargePage() {
             <div className="mt-6 overflow-hidden rounded-lg border border-slate-800">
               {recentRecharges.length === 0 ? (
                 <div className="px-5 py-8 text-sm text-slate-400">
-                  暂时还没有充值记录。
+                  暂时还没有管理操作记录。
                 </div>
               ) : (
                 <div className="divide-y divide-slate-800">
@@ -392,7 +457,10 @@ export default function AdminRechargePage() {
                           {record.email}
                         </p>
                         <p className="mt-1 text-slate-400">
-                          {record.description || "管理员手动充值"}
+                          {record.description ||
+                            (record.change_amount >= 0
+                              ? "管理员手动充值"
+                              : "管理员手动扣减")}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
                           {formatTime(record.created_at)}
@@ -400,8 +468,15 @@ export default function AdminRechargePage() {
                       </div>
 
                       <div className="md:text-right">
-                        <p className="font-bold text-cyan-300">
-                          +{record.change_amount.toLocaleString()} 点
+                        <p
+                          className={`font-bold ${
+                            record.change_amount >= 0
+                              ? "text-cyan-300"
+                              : "text-rose-300"
+                          }`}
+                        >
+                          {record.change_amount >= 0 ? "+" : ""}
+                          {record.change_amount.toLocaleString()} 点
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
                           余额 {record.balance_after.toLocaleString()} 点

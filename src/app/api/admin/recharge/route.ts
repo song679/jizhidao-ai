@@ -19,7 +19,7 @@ export async function GET(request: Request) {
           .select(
             "id, email, change_amount, balance_after, description, created_at"
           )
-          .eq("type", "recharge")
+          .in("type", ["recharge", "deduction"])
           .order("created_at", { ascending: false })
           .limit(20);
 
@@ -122,10 +122,13 @@ export async function POST(request: Request) {
     const targetEmail =
       typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const amount = Number(body.amount);
+    const operation = body.operation === "deduct" ? "deduct" : "add";
     const note =
       typeof body.note === "string" && body.note.trim()
         ? body.note.trim().slice(0, 200)
-        : "管理员手动充值";
+        : operation === "deduct"
+          ? "管理员手动扣减"
+          : "管理员手动充值";
 
     if (!targetEmail || !targetEmail.includes("@")) {
       return NextResponse.json(
@@ -224,14 +227,31 @@ export async function POST(request: Request) {
     }
 
     const previousPoints = targetPoints.points ?? 0;
-    const nextPoints = previousPoints + amount;
-    const { error: updatePointsError } = await adminContext.supabaseAdmin
+    const changeAmount = operation === "deduct" ? -amount : amount;
+    const nextPoints = previousPoints + changeAmount;
+
+    if (nextPoints < 0) {
+      return NextResponse.json(
+        {
+          error: `用户当前余额只有 ${previousPoints} 点，无法扣减 ${amount} 点`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const {
+      data: updatedPoints,
+      error: updatePointsError,
+    } = await adminContext.supabaseAdmin
       .from("user_points")
       .update({
         points: nextPoints,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", targetPoints.id);
+      .eq("id", targetPoints.id)
+      .eq("points", previousPoints)
+      .select("id, points")
+      .maybeSingle();
 
     if (updatePointsError) {
       return NextResponse.json(
@@ -240,28 +260,62 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!updatedPoints) {
+      return NextResponse.json(
+        { error: "用户余额刚刚发生变化，请重新查询后再操作" },
+        { status: 409 }
+      );
+    }
+
     const { error: transactionError } = await adminContext.supabaseAdmin
       .from("point_transactions")
       .insert({
         user_id: targetPoints.id,
         email: targetEmail,
-        change_amount: amount,
+        change_amount: changeAmount,
         balance_after: nextPoints,
-        type: "recharge",
+        type: operation === "deduct" ? "deduction" : "recharge",
         description: note,
       });
 
     if (transactionError) {
       console.error("写入充值流水失败：", transactionError.message);
+
+      const {
+        data: rolledBackPoints,
+        error: rollbackError,
+      } = await adminContext.supabaseAdmin
+        .from("user_points")
+        .update({
+          points: previousPoints,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", targetPoints.id)
+        .eq("points", nextPoints)
+        .select("id")
+        .maybeSingle();
+
+      if (rollbackError || !rolledBackPoints) {
+        console.error(
+          "回滚用户点数失败：",
+          rollbackError?.message || "余额已再次发生变化"
+        );
+      }
+
       return NextResponse.json(
-        { error: "点数已更新，但充值流水写入失败，请联系技术人员" },
+        {
+          error: rollbackError || !rolledBackPoints
+            ? "流水写入失败且余额回滚异常，请立即联系技术人员"
+            : "流水写入失败，本次余额变动已撤销",
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       email: targetEmail,
-      addedPoints: amount,
+      operation,
+      changeAmount,
       previousPoints,
       points: nextPoints,
     });
