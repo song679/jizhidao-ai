@@ -78,7 +78,9 @@ export async function POST(request: Request) {
 
     const requestUrl = new URL(request.url);
     const siteUrl = getLoginRedirectOrigin(requestUrl);
-    const emailRedirectTo = `${siteUrl}/chat?welcome=1`;
+    const callbackUrl = new URL("/auth/callback", siteUrl);
+    callbackUrl.searchParams.set("next", "/chat?welcome=1");
+    const emailRedirectTo = callbackUrl.toString();
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,
@@ -91,6 +93,7 @@ export async function POST(request: Request) {
       email,
       options: {
         emailRedirectTo,
+        shouldCreateUser: true,
       },
     });
 

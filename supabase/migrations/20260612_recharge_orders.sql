@@ -26,6 +26,10 @@ create index if not exists recharge_orders_status_created_idx
 
 alter table public.recharge_orders enable row level security;
 
+grant select, insert, update, delete
+  on table public.recharge_orders
+  to service_role;
+
 create or replace function public.complete_recharge_order(
   p_order_id uuid,
   p_admin_email text,
