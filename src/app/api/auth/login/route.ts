@@ -1,6 +1,58 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+const PRODUCTION_SITE_URL = "https://www.jizhidao-ai.com";
+
+function normalizeSiteUrl(value: string | undefined) {
+  if (!value) return null;
+
+  try {
+    const url = new URL(
+      value.startsWith("http://") || value.startsWith("https://")
+        ? value
+        : `https://${value}`
+    );
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+function getLoginRedirectOrigin(requestUrl: URL) {
+  const configuredSiteUrl = normalizeSiteUrl(
+    process.env.NEXT_PUBLIC_SITE_URL
+  );
+  const requestOrigin = normalizeSiteUrl(requestUrl.origin);
+  const requestIsLocal =
+    requestUrl.hostname === "localhost" ||
+    requestUrl.hostname === "127.0.0.1";
+  const configuredIsLocal =
+    configuredSiteUrl?.includes("localhost") ||
+    configuredSiteUrl?.includes("127.0.0.1");
+  const requestIsProductionDomain =
+    requestUrl.hostname === "www.jizhidao-ai.com" ||
+    requestUrl.hostname === "jizhidao-ai.com";
+
+  if (!requestIsLocal) {
+    if (requestIsProductionDomain) {
+      return PRODUCTION_SITE_URL;
+    }
+
+    if (configuredSiteUrl && !configuredIsLocal) {
+      return configuredSiteUrl;
+    }
+
+    return requestOrigin || PRODUCTION_SITE_URL;
+  }
+
+  return configuredSiteUrl || requestOrigin || "http://localhost:3000";
+}
+
 export async function POST(request: Request) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,9 +77,8 @@ export async function POST(request: Request) {
     }
 
     const requestUrl = new URL(request.url);
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-      requestUrl.origin;
+    const siteUrl = getLoginRedirectOrigin(requestUrl);
+    const emailRedirectTo = `${siteUrl}/chat?welcome=1`;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,
@@ -39,7 +90,7 @@ export async function POST(request: Request) {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${siteUrl}/chat?welcome=1`,
+        emailRedirectTo,
       },
     });
 
@@ -64,6 +115,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: "登录链接已发送到你的邮箱，请打开邮箱点击链接登录。",
+      redirectHost: new URL(emailRedirectTo).host,
     });
   } catch (error) {
     console.error("Login API Error:", error);

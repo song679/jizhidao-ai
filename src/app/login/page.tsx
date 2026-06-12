@@ -35,8 +35,12 @@ export default function LoginPage() {
         setMessage(`发送失败：${data?.error || "请稍后再试"}`);
       } else {
         setMessage(
-          data?.message ||
-            "登录链接已发送到你的邮箱，请打开邮箱点击链接登录。"
+          `${data?.message ||
+            "登录链接已发送到你的邮箱，请打开邮箱点击链接登录。"}${
+            data?.redirectHost
+              ? ` 登录后将返回：${data.redirectHost}`
+              : ""
+          }`
         );
       }
     } catch {
