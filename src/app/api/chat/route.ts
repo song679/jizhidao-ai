@@ -19,6 +19,25 @@ type ModelOption = {
 const MAX_MESSAGE_LENGTH = 8_000;
 const MAX_TOTAL_MESSAGE_LENGTH = 24_000;
 const MAX_REQUEST_BYTES = 128_000;
+const CHINA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+function getChinaDayStart() {
+  const shiftedNow = new Date(Date.now() + CHINA_OFFSET_MS);
+  const utcMidnight = Date.UTC(
+    shiftedNow.getUTCFullYear(),
+    shiftedNow.getUTCMonth(),
+    shiftedNow.getUTCDate()
+  );
+
+  return new Date(utcMidnight - CHINA_OFFSET_MS);
+}
+
+function getAdminEmails() {
+  return (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 const SYSTEM_PROMPT = `
 你是「极智岛 AI」的智能助手，服务对象主要是中文用户、普通用户、小白用户、创业者、自媒体人、电商卖家和办公人群。
@@ -433,6 +452,49 @@ export async function POST(request: Request) {
       process.env.CHAT_RATE_WINDOW_SECONDS,
       60
     );
+    const dailyPointLimit = parsePositiveInteger(
+      process.env.CHAT_DAILY_POINT_LIMIT,
+      200
+    );
+    const isAdmin = userEmail
+      ? getAdminEmails().includes(userEmail.toLowerCase())
+      : false;
+
+    if (!isAdmin) {
+      const { data: todayRequests, error: dailyUsageError } =
+        await supabaseAdmin
+          .from("chat_request_ledger")
+          .select("point_cost")
+          .eq("user_id", userId)
+          .in("status", ["reserved", "completed"])
+          .gte("created_at", getChinaDayStart().toISOString())
+          .limit(5000);
+
+      if (dailyUsageError) {
+        console.error("查询每日消费失败：", dailyUsageError.message);
+        return NextResponse.json(
+          { error: "消费额度校验暂时不可用，请稍后重试" },
+          { status: 503 }
+        );
+      }
+
+      const pointsUsedToday = (todayRequests || []).reduce(
+        (total, item) => total + Math.max(item.point_cost || 0, 0),
+        0
+      );
+
+      if (pointsUsedToday + pointCost > dailyPointLimit) {
+        return NextResponse.json(
+          {
+            error: `你今天的 AI 消费已达到 ${dailyPointLimit} 点上限，请明天再试或联系管理员`,
+            dailyPointLimit,
+            pointsUsedToday,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const { data: reservation, error: reservationError } =
       await supabaseAdmin.rpc("reserve_chat_points", {
         p_request_id: requestId,

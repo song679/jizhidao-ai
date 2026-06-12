@@ -41,12 +41,15 @@ export async function GET(request: Request) {
     const sevenDayStart = getChinaDayStart(6);
     const todayIso = todayStart.toISOString();
     const sevenDayIso = sevenDayStart.toISOString();
+    const staleReservationIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
     const [
       accountsResult,
       todayTransactionsResult,
       sevenDayTransactionsResult,
       recentActivityResult,
+      todayLedgerResult,
+      staleReservationsResult,
     ] = await Promise.all([
       adminContext.supabaseAdmin
         .from("user_points")
@@ -68,6 +71,16 @@ export async function GET(request: Request) {
         )
         .order("created_at", { ascending: false })
         .limit(20),
+      adminContext.supabaseAdmin
+        .from("chat_request_ledger")
+        .select("status, point_cost, model_name, created_at")
+        .gte("created_at", todayIso)
+        .limit(10000),
+      adminContext.supabaseAdmin
+        .from("chat_request_ledger")
+        .select("request_id", { count: "exact", head: true })
+        .eq("status", "reserved")
+        .lt("created_at", staleReservationIso),
     ]);
 
     const queryError = [
@@ -75,6 +88,8 @@ export async function GET(request: Request) {
       todayTransactionsResult.error,
       sevenDayTransactionsResult.error,
       recentActivityResult.error,
+      todayLedgerResult.error,
+      staleReservationsResult.error,
     ].find(Boolean);
 
     if (queryError) {
@@ -97,6 +112,32 @@ export async function GET(request: Request) {
     const todayRecharged = todayTransactions
       .filter((item) => item.type === "recharge")
       .reduce((sum, item) => sum + Math.max(item.change_amount || 0, 0), 0);
+    const todayLedger = todayLedgerResult.data || [];
+    const reservedToday = todayLedger.filter(
+      (item) => item.status === "reserved"
+    ).length;
+    const completedLedgerToday = todayLedger.filter(
+      (item) => item.status === "completed"
+    ).length;
+    const refundedLedgerToday = todayLedger.filter(
+      (item) => item.status === "refunded"
+    ).length;
+    const finalizedToday = completedLedgerToday + refundedLedgerToday;
+    const refundRate =
+      finalizedToday > 0
+        ? Math.round((refundedLedgerToday / finalizedToday) * 1000) / 10
+        : 0;
+    const dailyPointLimit = Number(process.env.CHAT_DAILY_POINT_LIMIT || 200);
+    const healthIssues = [
+      !process.env.OPENAI_API_KEY ? "OpenAI API 密钥未配置" : null,
+      !process.env.DEEPSEEK_API_KEY ? "DeepSeek API 密钥未配置" : null,
+      (staleReservationsResult.count || 0) > 0
+        ? `存在 ${staleReservationsResult.count} 个滞留扣点请求`
+        : null,
+      refundRate >= 20 && finalizedToday >= 5
+        ? `今日退款率偏高：${refundRate}%`
+        : null,
+    ].filter((item): item is string => Boolean(item));
 
     const dailyMap = new Map<
       string,
@@ -158,6 +199,23 @@ export async function GET(request: Request) {
         (left, right) => right.requests - left.requests
       ),
       recentActivity: recentActivityResult.data || [],
+      health: {
+        status: healthIssues.length === 0 ? "healthy" : "warning",
+        issues: healthIssues,
+        staleReservations: staleReservationsResult.count || 0,
+        reservedToday,
+        completedToday: completedLedgerToday,
+        refundedToday: refundedLedgerToday,
+        refundRate,
+        dailyPointLimit:
+          Number.isFinite(dailyPointLimit) && dailyPointLimit > 0
+            ? dailyPointLimit
+            : 200,
+        providers: {
+          openai: Boolean(process.env.OPENAI_API_KEY),
+          deepseek: Boolean(process.env.DEEPSEEK_API_KEY),
+        },
+      },
     });
   } catch (error) {
     console.error("Admin Dashboard API Error:", error);

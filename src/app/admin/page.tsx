@@ -35,6 +35,20 @@ type DashboardData = {
     description: string | null;
     created_at: string;
   }>;
+  health: {
+    status: "healthy" | "warning";
+    issues: string[];
+    staleReservations: number;
+    reservedToday: number;
+    completedToday: number;
+    refundedToday: number;
+    refundRate: number;
+    dailyPointLimit: number;
+    providers: {
+      openai: boolean;
+      deepseek: boolean;
+    };
+  };
 };
 
 const transactionLabels: Record<string, string> = {
@@ -171,6 +185,55 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+        {data?.health && (
+          <section
+            className={`mb-6 rounded-lg border p-5 ${
+              data.health.status === "healthy"
+                ? "border-emerald-400/30 bg-emerald-400/10"
+                : "border-amber-400/30 bg-amber-400/10"
+            }`}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p
+                  className={`text-sm font-bold ${
+                    data.health.status === "healthy"
+                      ? "text-emerald-200"
+                      : "text-amber-200"
+                  }`}
+                >
+                  {data.health.status === "healthy"
+                    ? "系统运行正常"
+                    : "系统存在需要关注的项目"}
+                </p>
+                <p className="mt-2 text-xs leading-6 text-slate-300">
+                  OpenAI：{data.health.providers.openai ? "已配置" : "未配置"}
+                  {" · "}
+                  DeepSeek：
+                  {data.health.providers.deepseek ? "已配置" : "未配置"}
+                  {" · "}
+                  单用户每日上限：
+                  {data.health.dailyPointLimit.toLocaleString()} 点
+                </p>
+              </div>
+              <div className="text-right text-xs text-slate-300">
+                <p>今日退款率 {data.health.refundRate}%</p>
+                <p className="mt-1">
+                  滞留请求 {data.health.staleReservations} 个
+                </p>
+              </div>
+            </div>
+
+            {data.health.issues.length > 0 && (
+              <ul className="mt-4 space-y-2 border-t border-amber-300/20 pt-4 text-sm text-amber-100">
+                {data.health.issues.map((issue) => (
+                  <li key={issue}>• {issue}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
         <section className="grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-2 lg:grid-cols-5">
           {[
             ["点数账户", data?.metrics.accounts ?? 0, "累计初始化用户"],
@@ -204,6 +267,36 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </section>
+
+        {data?.health && (
+          <section className="mt-6 grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-3">
+            {[
+              [
+                "账本已完成",
+                data.health.completedToday,
+                "今日成功结算请求",
+              ],
+              [
+                "账本预扣中",
+                data.health.reservedToday,
+                "正常请求或尚未回收",
+              ],
+              [
+                "账本已退款",
+                data.health.refundedToday,
+                "失败或中断请求",
+              ],
+            ].map(([label, value, note]) => (
+              <div key={label} className="bg-slate-950 px-5 py-4">
+                <p className="text-xs text-slate-400">{label}</p>
+                <p className="mt-2 text-xl font-bold text-cyan-300">
+                  {Number(value).toLocaleString()}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{note}</p>
+              </div>
+            ))}
+          </section>
+        )}
 
         <section className="grid gap-8 py-8 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="min-w-0">
