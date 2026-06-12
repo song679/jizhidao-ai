@@ -232,6 +232,9 @@ export default function Home() {
             <Link href="/refund" className="hover:text-white">
               充值与退款
             </Link>
+            <Link href="/support" className="hover:text-white">
+              帮助与反馈
+            </Link>
           </div>
         </footer>
       </section>

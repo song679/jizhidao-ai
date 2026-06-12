@@ -290,6 +290,9 @@ export default function PricingPage() {
             <Link href="/refund" className="text-cyan-300 hover:text-cyan-200">
               充值与退款
             </Link>
+            <Link href="/support" className="text-cyan-300 hover:text-cyan-200">
+              联系管理员
+            </Link>
           </div>
         </footer>
       </div>

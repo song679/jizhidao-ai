@@ -191,6 +191,18 @@ export default function AccountPage() {
                 </span>
                 <span className="text-cyan-300">查看</span>
               </Link>
+              <Link
+                href="/support"
+                className="flex items-center justify-between px-5 py-4 text-sm hover:bg-slate-900"
+              >
+                <span>
+                  <strong className="block">帮助与问题反馈</strong>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    整理问题信息并联系管理员
+                  </span>
+                </span>
+                <span className="text-cyan-300">联系</span>
+              </Link>
             </div>
 
             <div className="mt-8">
