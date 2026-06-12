@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.jizhidao-ai.com"),
   title: "极智岛 AI - 中文 AI 聚合平台",
   description:
     "极智岛 AI 是面向中文用户的 AI 聚合平台，支持 AI 聊天、写作、办公、电商文案、短视频脚本等场景，一个账号连接多种 AI 能力。",
@@ -39,6 +40,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
