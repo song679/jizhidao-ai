@@ -27,6 +27,8 @@ type ModelOption = {
   pointCost: number;
 };
 
+const MAX_INPUT_LENGTH = 8_000;
+
 const promptTools = [
   {
     name: "AI 聊天",
@@ -434,6 +436,17 @@ async function logout() {
 
   if (!userText || loading) return;
 
+  if (userText.length > MAX_INPUT_LENGTH) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: `单条消息不能超过 ${MAX_INPUT_LENGTH} 个字符，请精简后重试。`,
+      },
+    ]);
+    return;
+  }
+
   if (!userEmail) {
     setMessages((prev) => [
       ...prev,
@@ -517,7 +530,7 @@ async function logout() {
           setPoints(data.points);
         }
 
-        if ([402, 409, 429].includes(response.status)) {
+        if ([400, 402, 404, 409, 413, 429].includes(response.status)) {
           setInput(userText);
           setMessages([
             ...newMessages,
@@ -1021,6 +1034,7 @@ async function logout() {
                <textarea
                  value={input}
                  onChange={(event) => setInput(event.target.value)}
+                 maxLength={MAX_INPUT_LENGTH}
                  onKeyDown={(event) => {
                    if (event.key === "Enter" && !event.shiftKey) {
                      event.preventDefault();
@@ -1053,6 +1067,11 @@ async function logout() {
                     ? `当前 ${modelName} 模型每次需要 ${selectedPointCost} 点，余额不足，请充值或切换模型。`
                     : `当前已接入 ${modelName} 模型，每次消耗 ${selectedPointCost} 点。测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。`}
               </p>
+              {input.length > MAX_INPUT_LENGTH * 0.75 && (
+                <p className="mt-2 text-right text-xs text-slate-500">
+                  {input.length} / {MAX_INPUT_LENGTH}
+                </p>
+              )}
             </div>
           </section>
         </section>

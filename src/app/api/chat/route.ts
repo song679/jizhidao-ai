@@ -16,6 +16,10 @@ type ModelOption = {
   pointCost: number;
 };
 
+const MAX_MESSAGE_LENGTH = 8_000;
+const MAX_TOTAL_MESSAGE_LENGTH = 24_000;
+const MAX_REQUEST_BYTES = 128_000;
+
 const SYSTEM_PROMPT = `
 你是「极智岛 AI」的智能助手，服务对象主要是中文用户、普通用户、小白用户、创业者、自媒体人、电商卖家和办公人群。
 
@@ -150,22 +154,64 @@ function resolveModelSelection(body: {
   );
 }
 
-function getSafeMessages(messages: unknown): ChatMessage[] {
+function getSafeMessages(messages: unknown): {
+  messages: ChatMessage[];
+  error: string | null;
+} {
   if (!Array.isArray(messages)) {
-    return [];
+    return {
+      messages: [],
+      error: "messages 参数格式不正确",
+    };
   }
 
-  return messages
+  const safeMessages = messages
     .filter(
       (message): message is ChatMessage =>
         message &&
         typeof message === "object" &&
         "role" in message &&
         "content" in message &&
-        ["user", "assistant", "system"].includes(String(message.role)) &&
+        ["user", "assistant"].includes(String(message.role)) &&
         typeof message.content === "string"
     )
-    .slice(-10);
+    .slice(-10)
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+
+  if (safeMessages.length === 0) {
+    return {
+      messages: [],
+      error: "请输入有效的聊天内容",
+    };
+  }
+
+  if (safeMessages.some((message) => message.content.length > MAX_MESSAGE_LENGTH)) {
+    return {
+      messages: [],
+      error: `单条消息不能超过 ${MAX_MESSAGE_LENGTH} 个字符`,
+    };
+  }
+
+  const totalLength = safeMessages.reduce(
+    (total, message) => total + message.content.length,
+    0
+  );
+
+  if (totalLength > MAX_TOTAL_MESSAGE_LENGTH) {
+    return {
+      messages: [],
+      error: "当前对话内容过长，请新建聊天后继续",
+    };
+  }
+
+  return {
+    messages: safeMessages,
+    error: null,
+  };
 }
 
 async function callDeepSeek(messages: ChatMessage[], model: string) {
@@ -288,6 +334,15 @@ async function callOpenAI(messages: ChatMessage[], model: string) {
 
 export async function POST(request: Request) {
   try {
+    const contentLength = Number(request.headers.get("content-length") || 0);
+
+    if (contentLength > MAX_REQUEST_BYTES) {
+      return NextResponse.json(
+        { error: "本次发送内容过大，请精简后重试" },
+        { status: 413 }
+      );
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
@@ -333,22 +388,25 @@ export async function POST(request: Request) {
     const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey);
 
     const body = await request.json();
-    const safeMessages = getSafeMessages(body.messages);
+    const messageResult = getSafeMessages(body.messages);
+    const safeMessages = messageResult.messages;
 
-    if (safeMessages.length === 0) {
+    if (messageResult.error) {
       return NextResponse.json(
-        { error: "messages 参数格式不正确" },
+        { error: messageResult.error },
         { status: 400 }
       );
     }
 
-    const chatSessionId =
-      typeof body.sessionId === "string" && body.sessionId.trim()
-        ? body.sessionId.trim()
-        : null;
-
     const userMessage =
       safeMessages.filter((item) => item.role === "user").at(-1)?.content || "";
+
+    if (!userMessage) {
+      return NextResponse.json(
+        { error: "缺少要发送的用户消息" },
+        { status: 400 }
+      );
+    }
 
     const selectedModel = resolveModelSelection(body);
     const provider = selectedModel.provider;
@@ -360,6 +418,63 @@ export async function POST(request: Request) {
         { error: "请求标识无效，请刷新页面后重试" },
         { status: 400 }
       );
+    }
+
+    const requestedSessionId =
+      typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+    let chatSessionId = requestedSessionId;
+
+    if (requestedSessionId) {
+      if (!isUuid(requestedSessionId)) {
+        return NextResponse.json(
+          { error: "聊天会话标识无效，请刷新页面后重试" },
+          { status: 400 }
+        );
+      }
+
+      const { data: ownedSession, error: sessionQueryError } =
+        await supabaseAdmin
+          .from("chat_sessions")
+          .select("id")
+          .eq("id", requestedSessionId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+      if (sessionQueryError) {
+        console.error("校验聊天会话失败：", sessionQueryError.message);
+        return NextResponse.json(
+          { error: "聊天会话校验失败，请稍后重试" },
+          { status: 500 }
+        );
+      }
+
+      if (!ownedSession) {
+        return NextResponse.json(
+          { error: "聊天会话不存在或不属于当前账号，请刷新后重试" },
+          { status: 404 }
+        );
+      }
+    } else {
+      const { data: newSession, error: sessionCreateError } =
+        await supabaseAdmin
+          .from("chat_sessions")
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            title: "新聊天",
+          })
+          .select("id")
+          .single();
+
+      if (sessionCreateError || !newSession) {
+        console.error("自动创建聊天会话失败：", sessionCreateError?.message);
+        return NextResponse.json(
+          { error: "创建聊天会话失败，请刷新后重试" },
+          { status: 500 }
+        );
+      }
+
+      chatSessionId = newSession.id;
     }
 
     const rateLimit = parsePositiveInteger(process.env.CHAT_RATE_LIMIT, 10);
@@ -501,36 +616,34 @@ export async function POST(request: Request) {
         console.error("保存 AI 回复失败：", assistantMessageError.message);
       }
 
-      if (chatSessionId) {
-        const titleFromMessage =
-          userMessage.length > 20
-            ? `${userMessage.slice(0, 20)}...`
-            : userMessage;
+      const titleFromMessage =
+        userMessage.length > 20
+          ? `${userMessage.slice(0, 20)}...`
+          : userMessage;
 
-        const { data: currentSession } = await supabaseAdmin
-          .from("chat_sessions")
-          .select("title")
-          .eq("id", chatSessionId)
-          .eq("user_id", user.id)
-          .single();
+      const { data: currentSession } = await supabaseAdmin
+        .from("chat_sessions")
+        .select("title")
+        .eq("id", chatSessionId)
+        .eq("user_id", user.id)
+        .single();
 
-        const nextTitle =
-          currentSession?.title === "新聊天" && titleFromMessage
-            ? titleFromMessage
-            : currentSession?.title || "新聊天";
+      const nextTitle =
+        currentSession?.title === "新聊天" && titleFromMessage
+          ? titleFromMessage
+          : currentSession?.title || "新聊天";
 
-        const { error: sessionUpdateError } = await supabaseAdmin
-          .from("chat_sessions")
-          .update({
-            title: nextTitle,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", chatSessionId)
-          .eq("user_id", user.id);
+      const { error: sessionUpdateError } = await supabaseAdmin
+        .from("chat_sessions")
+        .update({
+          title: nextTitle,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", chatSessionId)
+        .eq("user_id", user.id);
 
-        if (sessionUpdateError) {
-          console.error("更新聊天会话失败：", sessionUpdateError.message);
-        }
+      if (sessionUpdateError) {
+        console.error("更新聊天会话失败：", sessionUpdateError.message);
       }
 
       return NextResponse.json({
