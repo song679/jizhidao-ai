@@ -26,6 +26,7 @@ export default function AccountPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
@@ -94,6 +95,55 @@ export default function AccountPage() {
   async function logout() {
     await supabase.auth.signOut();
     window.location.assign("/login");
+  }
+
+  async function exportPersonalData() {
+    setExporting(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.assign("/login");
+        return;
+      }
+
+      const response = await fetch("/api/account/export", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || "导出个人数据失败");
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("content-disposition");
+      const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/);
+      const filename =
+        filenameMatch?.[1] ||
+        `jizhidao-ai-data-${new Date().toISOString().slice(0, 10)}.json`;
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+      setMessage("个人数据文件已生成并开始下载，请妥善保管。");
+    } catch (error) {
+      console.error("导出个人数据失败：", error);
+      setMessage(error instanceof Error ? error.message : "导出个人数据失败");
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -226,6 +276,20 @@ export default function AccountPage() {
                 >
                   充值与退款
                 </Link>
+              </div>
+              <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-sm font-semibold">个人数据副本</p>
+                <p className="mt-2 text-xs leading-6 text-slate-500">
+                  下载当前账号的账户信息、点数流水、聊天会话和消息记录。文件包含个人信息，请勿随意分享。
+                </p>
+                <button
+                  type="button"
+                  onClick={exportPersonalData}
+                  disabled={exporting}
+                  className="mt-4 rounded-lg border border-cyan-400/40 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {exporting ? "正在生成..." : "导出我的数据"}
+                </button>
               </div>
               <button
                 type="button"
