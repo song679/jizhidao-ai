@@ -27,6 +27,33 @@ type ModelOption = {
   pointCost: number;
 };
 
+const promptTools = [
+  {
+    name: "AI 聊天",
+    template: "",
+  },
+  {
+    name: "写文章",
+    template:
+      "帮我写一篇文章，主题是：____。要求：结构清晰、语言通俗、适合普通用户阅读，字数控制在 800 字左右。",
+  },
+  {
+    name: "小红书文案",
+    template:
+      "帮我写一篇小红书文案，产品/主题是：____。要求：标题吸引人，正文像真人分享，带 3-5 个 emoji，最后加几个相关话题标签。",
+  },
+  {
+    name: "电商标题",
+    template:
+      "帮我生成 10 个电商商品标题，产品是：____。要求：突出卖点，适合电商平台搜索，标题简洁有吸引力。",
+  },
+  {
+    name: "短视频脚本",
+    template:
+      "帮我写一个短视频脚本，主题是：____。要求：包含开头钩子、分镜内容、口播文案和结尾引导，时长控制在 60 秒左右。",
+  },
+];
+
 export default function ChatPage() {
        const defaultMessages: Message[] = [
        {
@@ -47,6 +74,7 @@ export default function ChatPage() {
   const [activeTool, setActiveTool] = useState("AI 聊天");
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelId, setSelectedModelId] = useState("");
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -186,6 +214,16 @@ async function logout() {
         setInput(template);
       }
 
+      function selectPromptTool(toolName: string, template: string) {
+        if (toolName === "AI 聊天") {
+          setActiveTool(toolName);
+          setInput("");
+          return;
+        }
+
+        applyPromptTemplate(toolName, template);
+      }
+
     async function fetchSessions(accessToken: string) {
       const response = await fetch("/api/chat/sessions", {
         method: "GET",
@@ -232,6 +270,7 @@ async function logout() {
       setMessages(defaultMessages);
       setInput("");
       setActiveTool("AI 聊天");
+      setMobileHistoryOpen(false);
 
       return newSession;
     }
@@ -273,6 +312,7 @@ async function logout() {
       setMessages(loadedMessages.length > 0 ? loadedMessages : defaultMessages);
       setInput("");
       setActiveTool("AI 聊天");
+      setMobileHistoryOpen(false);
     }
 
     async function startNewChat() {
@@ -626,6 +666,91 @@ async function logout() {
         </header>
 
         <section className="grid flex-1 gap-6 md:grid-cols-[260px_1fr]">
+          <div className="space-y-3 md:hidden">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {promptTools.map((tool) => (
+                <button
+                  key={tool.name}
+                  type="button"
+                  onClick={() => selectPromptTool(tool.name, tool.template)}
+                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold ${
+                    activeTool === tool.name
+                      ? "bg-cyan-400 text-slate-950"
+                      : "border border-slate-700 text-slate-300"
+                  }`}
+                >
+                  {tool.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60">
+              <div className="flex items-center justify-between px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setMobileHistoryOpen((current) => !current)}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-semibold"
+                  aria-expanded={mobileHistoryOpen}
+                >
+                  <span>历史会话</span>
+                  <span className="truncate text-xs font-normal text-slate-500">
+                    {sessions.find((item) => item.id === currentSessionId)
+                      ?.title || "新聊天"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={startNewChat}
+                  className="ml-3 shrink-0 text-xs font-semibold text-cyan-300"
+                >
+                  + 新建
+                </button>
+              </div>
+
+              {mobileHistoryOpen && (
+                <div className="max-h-56 space-y-1 overflow-y-auto border-t border-slate-800 p-2">
+                  {sessions.length === 0 ? (
+                    <p className="px-3 py-4 text-xs text-slate-500">
+                      暂无历史会话
+                    </p>
+                  ) : (
+                    sessions.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center gap-1 rounded-xl pl-3 pr-1 ${
+                          currentSessionId === item.id
+                            ? "bg-cyan-400 text-slate-950"
+                            : "text-slate-300 hover:bg-slate-800"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => loadSessionMessages(item.id)}
+                          className="min-w-0 flex-1 truncate py-2.5 text-left text-xs"
+                        >
+                          {item.title}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteChatSession(item)}
+                          disabled={deletingSessionId === item.id}
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base disabled:opacity-50 ${
+                            currentSessionId === item.id
+                              ? "text-slate-700"
+                              : "text-slate-600 hover:text-rose-300"
+                          }`}
+                          aria-label={`删除会话 ${item.title}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           <aside className="hidden rounded-3xl border border-slate-800 bg-slate-900/60 p-5 md:block">
             <h2 className="mb-4 text-lg font-semibold">AI 功能</h2>
 
