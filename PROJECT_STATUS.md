@@ -74,6 +74,7 @@
 - `/admin/recharge`：手动充值管理。
 - `/admin/transactions`：点数流水。
 - `/admin/orders`：充值订单管理。
+- `/admin/system`：环境变量、数据库表和关键函数检查。
 - 管理员权限由 Vercel 环境变量 `ADMIN_EMAILS` 控制。
 
 ### 法务与支持页面
@@ -92,6 +93,7 @@
 - 数据库原始错误只记录到服务端日志，不再返回给浏览器。
 - 页面错误、根级崩溃和 404 均提供恢复入口与故障编号。
 - 帮助页自动接收故障编号，并生成包含页面、时间和浏览器环境的诊断信息。
+- `OPERATIONS.md` 记录数据库备份、恢复、部署回滚和上线检查流程。
 - 主要生产代码已经提交并推送到 GitHub。
 
 ## 3. 主要页面和接口
@@ -123,6 +125,7 @@
 - `/api/admin/recharge`
 - `/api/admin/transactions`
 - `/api/admin/orders`
+- `/api/admin/system`
 - `/api/account/export`
 - `/api/account/delete`
 - `/api/health`
@@ -223,7 +226,7 @@ https://www.jizhidao-ai.com/**
 2. 接入正式在线支付及支付回调。
 3. 增加邮件通知、订单通知和管理员提醒。
 4. 继续完成移动端、性能和异常恢复测试。
-5. 补充数据库备份和运营文档。
+5. 定期执行数据库备份和上线检查清单。
 
 ## 9. 最近关键提交
 
