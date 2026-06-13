@@ -710,8 +710,8 @@ async function logout() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-6">
-        <header className="mb-6 flex items-center justify-between border-b border-slate-800 pb-5">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-6 sm:py-6">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 sm:mb-6 sm:pb-5">
           <Link href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
           </Link>
@@ -728,7 +728,7 @@ async function logout() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <label className="hidden items-center rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 md:flex">
               <span className="mr-2 shrink-0">当前模型：</span>
               <select
@@ -757,7 +757,7 @@ async function logout() {
 
             <a
               href="/pricing"
-              className="rounded-full border border-cyan-400/40 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10"
+              className="rounded-full border border-cyan-400/40 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-400/10 sm:px-4 sm:text-sm"
             >
               充值 / 会员
             </a>
@@ -784,14 +784,14 @@ async function logout() {
             {userEmail ? (
               <button
                 onClick={logout}
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
+                className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-slate-200 sm:px-5 sm:text-sm"
               >
                 退出登录
               </button>
             ) : (
               <a
                 href="/login"
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200"
+                className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-slate-200 sm:px-5 sm:text-sm"
               >
                 登录 / 注册
               </a>
@@ -1041,8 +1041,8 @@ async function logout() {
 
           </aside>
 
-          <section className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 p-5">
+          <section className="flex h-[68dvh] min-h-[480px] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60 md:h-[75vh] md:min-h-0">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 p-4 sm:gap-4 sm:p-5">
               <div>
                 <h1 className="text-xl font-bold">{activeTool}</h1>
                 <p className="mt-1 text-sm text-slate-400">
@@ -1095,7 +1095,7 @@ async function logout() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:space-y-5 sm:p-5">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -1104,7 +1104,7 @@ async function logout() {
                   }`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-3xl px-5 py-4 text-sm leading-7 ${
+                    className={`max-w-[92%] rounded-3xl px-4 py-3 text-sm leading-7 sm:max-w-[85%] sm:px-5 sm:py-4 ${
                       message.role === "user"
                         ? "bg-cyan-400 text-slate-950"
                         : "bg-slate-800 text-slate-100"
@@ -1169,7 +1169,7 @@ async function logout() {
               <div ref={bottomRef} />
             </div>
 
-            <div className="border-t border-slate-800 bg-slate-900/80 p-5">
+            <div className="border-t border-slate-800 bg-slate-900/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
               {!userEmail && (
                 <div className="mb-4 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
                   请先登录后使用 AI 聊天功能。
@@ -1179,19 +1179,26 @@ async function logout() {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                <textarea
                  value={input}
                  onChange={(event) => setInput(event.target.value)}
                  maxLength={MAX_INPUT_LENGTH}
+                 rows={2}
+                 enterKeyHint="send"
+                 aria-label="输入聊天内容"
                  onKeyDown={(event) => {
-                   if (event.key === "Enter" && !event.shiftKey) {
+                   if (
+                     event.key === "Enter" &&
+                     !event.shiftKey &&
+                     !event.nativeEvent.isComposing
+                   ) {
                      event.preventDefault();
                      sendMessage();
                    }
                  }}
                  disabled={!userEmail || loading || !hasEnoughPoints}
-                 className="min-h-14 flex-1 resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                 className="min-h-16 max-h-40 w-full resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
                  placeholder={
                    !userEmail
                      ? "请先登录后使用聊天功能"
@@ -1204,7 +1211,7 @@ async function logout() {
                   <button
                     type="button"
                     onClick={stopGeneration}
-                    className="rounded-2xl border border-rose-400/60 bg-rose-400/10 px-5 font-semibold text-rose-200 hover:bg-rose-400/20"
+                    className="min-h-12 rounded-2xl border border-rose-400/60 bg-rose-400/10 px-5 py-3 font-semibold text-rose-200 hover:bg-rose-400/20 sm:py-0"
                   >
                     停止生成
                   </button>
@@ -1212,7 +1219,7 @@ async function logout() {
                   <button
                     onClick={sendMessage}
                     disabled={!userEmail || !hasEnoughPoints}
-                    className="rounded-2xl bg-cyan-400 px-6 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-h-12 rounded-2xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 sm:py-0"
                   >
                     {!userEmail
                       ? "请先登录"
@@ -1223,12 +1230,21 @@ async function logout() {
                 )}
               </div>
 
-              <p className="mt-3 text-xs text-slate-500">
-                {!userEmail
-                  ? "请先登录后使用 AI 聊天功能。"
-                  : !hasEnoughPoints
-                    ? `当前 ${modelName} 模型每次需要 ${selectedPointCost} 点，余额不足，请充值或切换模型。`
-                    : `当前已接入 ${modelName} 模型，每次消耗 ${selectedPointCost} 点。测试阶段请勿输入敏感信息。按 Enter 发送，Shift + Enter 换行。`}
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                {!userEmail ? (
+                  "请先登录后使用 AI 聊天功能。"
+                ) : !hasEnoughPoints ? (
+                  `当前 ${modelName} 模型每次需要 ${selectedPointCost} 点，余额不足，请充值或切换模型。`
+                ) : (
+                  <>
+                    当前已接入 {modelName} 模型，每次消耗{" "}
+                    {selectedPointCost} 点。测试阶段请勿输入敏感信息。
+                    <span className="hidden sm:inline">
+                      按 Enter 发送，Shift + Enter 换行。
+                    </span>
+                    <span className="sm:hidden">点击发送按钮提交内容。</span>
+                  </>
+                )}
               </p>
               {input.length > MAX_INPUT_LENGTH * 0.75 && (
                 <p className="mt-2 text-right text-xs text-slate-500">
