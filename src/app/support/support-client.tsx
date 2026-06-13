@@ -31,6 +31,7 @@ export default function SupportClient({
   const [feedbackTime, setFeedbackTime] = useState("");
   const [browserInfo, setBrowserInfo] = useState("");
   const [copyText, setCopyText] = useState("复制问题信息");
+  const [contactCopyText, setContactCopyText] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -96,6 +97,18 @@ export default function SupportClient({
     }
   }
 
+  async function copyContact(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setContactCopyText(`${label}已复制`);
+      window.setTimeout(() => setContactCopyText(""), 1600);
+    } catch (error) {
+      console.error(`复制${label}失败：`, error);
+      setContactCopyText(`复制${label}失败`);
+      window.setTimeout(() => setContactCopyText(""), 2200);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-5xl px-5 py-8 md:px-8">
@@ -139,7 +152,7 @@ export default function SupportClient({
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
             <h2 className="text-xl font-bold">生成问题信息</h2>
 
             <div className="mt-6 grid gap-5">
@@ -185,7 +198,7 @@ export default function SupportClient({
               {report}
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-5 grid gap-3 sm:flex sm:flex-wrap">
               <button
                 type="button"
                 onClick={copyReport}
@@ -206,21 +219,44 @@ export default function SupportClient({
             <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 p-6">
               <h2 className="text-xl font-bold text-cyan-100">管理员联系方式</h2>
               <div className="mt-5 space-y-4 text-sm">
-                <div>
-                  <p className="text-cyan-200/70">邮箱</p>
-                  <a
-                    href={`mailto:${supportEmail}`}
-                    className="mt-1 block break-all font-semibold text-white hover:text-cyan-200"
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-slate-950/40 p-4">
+                  <div className="min-w-0">
+                    <p className="text-cyan-200/70">邮箱</p>
+                    <a
+                      href={`mailto:${supportEmail}`}
+                      className="mt-1 block break-all font-semibold text-white hover:text-cyan-200"
+                    >
+                      {supportEmail}
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyContact(supportEmail, "邮箱")}
+                    className="shrink-0 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs font-semibold text-cyan-100"
                   >
-                    {supportEmail}
-                  </a>
+                    复制
+                  </button>
                 </div>
-                <div>
-                  <p className="text-cyan-200/70">微信</p>
-                  <p className="mt-1 break-all font-semibold text-white">
-                    {adminWechat}
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-slate-950/40 p-4">
+                  <div className="min-w-0">
+                    <p className="text-cyan-200/70">微信</p>
+                    <p className="mt-1 break-all font-semibold text-white">
+                      {adminWechat}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyContact(adminWechat, "微信")}
+                    className="shrink-0 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs font-semibold text-cyan-100"
+                  >
+                    复制
+                  </button>
+                </div>
+                {contactCopyText && (
+                  <p className="text-center text-xs font-semibold text-cyan-100">
+                    {contactCopyText}
                   </p>
-                </div>
+                )}
               </div>
             </div>
 
@@ -240,6 +276,9 @@ export default function SupportClient({
               <div className="mt-4 grid gap-3 text-slate-300">
                 <Link href="/points" className="hover:text-cyan-300">
                   查看点数明细 →
+                </Link>
+                <Link href="/orders" className="hover:text-cyan-300">
+                  查看充值订单 →
                 </Link>
                 <Link href="/refund" className="hover:text-cyan-300">
                   查看充值与退款规则 →
