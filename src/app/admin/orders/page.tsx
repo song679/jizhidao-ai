@@ -29,6 +29,13 @@ const statusLabels: Record<string, string> = {
   refunded: "已退款",
 };
 
+const statusClasses: Record<string, string> = {
+  pending: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+  paid: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+  cancelled: "border-slate-600 bg-slate-800 text-slate-300",
+  refunded: "border-violet-400/30 bg-violet-400/10 text-violet-200",
+};
+
 const PAGE_SIZE = 20;
 
 const paymentChannelLabels: Record<string, string> = {
@@ -365,7 +372,93 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
-        <section className="mt-6 overflow-x-auto rounded-lg border border-slate-800">
+        <section className="mt-6 space-y-4 md:hidden">
+          {orders.map((order) => (
+            <article
+              key={order.id}
+              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold">{order.plan_name}</p>
+                  <p className="mt-1 truncate text-sm text-slate-400">
+                    {order.email}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${
+                    statusClasses[order.status] || statusClasses.cancelled
+                  }`}
+                >
+                  {getOrderStatusLabel(order)}
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
+                <div>
+                  <p className="text-xs text-slate-500">支付金额</p>
+                  <p className="mt-1 font-bold">
+                    ¥{formatPlanPrice(order.amount_cents)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">到账点数</p>
+                  <p className="mt-1 font-bold text-cyan-300">
+                    {order.points.toLocaleString()} 点
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-4 break-all font-mono text-xs text-slate-500">
+                {order.order_no}
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                {formatDate(order.created_at)}
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(order)}
+                  className="rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-300"
+                >
+                  查看详情
+                </button>
+                {order.status === "pending" ? (
+                  <button
+                    type="button"
+                    onClick={() => openPaymentDialog(order)}
+                    disabled={processingId === order.id}
+                    className="rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+                  >
+                    确认到账
+                  </button>
+                ) : (
+                  <div />
+                )}
+              </div>
+
+              {order.status === "pending" && (
+                <button
+                  type="button"
+                  onClick={() => cancelOrder(order)}
+                  disabled={processingId === order.id}
+                  className="mt-3 w-full rounded-xl border border-rose-400/40 px-4 py-3 text-sm text-rose-300 disabled:opacity-50"
+                >
+                  取消此订单
+                </button>
+              )}
+            </article>
+          ))}
+
+          {!loading && orders.length === 0 && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-12 text-center text-sm text-slate-400">
+              当前筛选条件下没有订单。
+            </div>
+          )}
+        </section>
+
+        <section className="mt-6 hidden overflow-x-auto rounded-lg border border-slate-800 md:block">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-slate-900 text-xs text-slate-400">
               <tr>
