@@ -68,13 +68,17 @@ export async function GET(request: Request) {
       const { error } = await context.supabaseAdmin
         .from(table)
         .select("*", { count: "exact", head: true });
+      const isChatLedgerPermissionError =
+        table === "chat_request_ledger" && error?.code === "42501";
 
       return {
         id: `table:${table}`,
         label,
         status: error ? ("error" as const) : ("ok" as const),
         detail: error
-          ? "不可用，请检查数据库迁移和 service_role 权限"
+          ? isChatLedgerPermissionError
+            ? "service_role 权限不足，请执行 20260613_chat_ledger_permissions.sql"
+            : "不可用，请检查数据库迁移和 service_role 权限"
           : `可用，响应 ${Date.now() - startedAt}ms`,
       };
     })
