@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { formatPlanPrice } from "@/lib/recharge-plans";
@@ -64,12 +64,16 @@ export default function OrdersPage() {
   const [message, setMessage] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const knownStatusesRef = useRef<Map<string, string>>(new Map());
+  const hasLoadedRef = useRef(false);
   const pendingCount = orders.filter((order) => order.status === "pending").length;
   const paidCount = orders.filter((order) => order.status === "paid").length;
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    setMessage("");
+  const loadOrders = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setMessage("");
+    }
 
     try {
       const {
@@ -93,17 +97,48 @@ export default function OrdersPage() {
         throw new Error(data?.error || "加载订单失败");
       }
 
-      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      const nextOrders = Array.isArray(data.orders) ? data.orders : [];
+      const newlyPaid = hasLoadedRef.current
+        ? nextOrders.find(
+            (order: Order) =>
+              knownStatusesRef.current.get(order.id) === "pending" &&
+              order.status === "paid"
+          )
+        : null;
+
+      knownStatusesRef.current = new Map(
+        nextOrders.map((order: Order) => [order.id, order.status])
+      );
+      hasLoadedRef.current = true;
+      setOrders(nextOrders);
+
+      if (newlyPaid) {
+        setMessage(
+          `订单 ${newlyPaid.order_no} 已到账，${newlyPaid.points.toLocaleString()} 点已加入账户。`
+        );
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "加载订单失败");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadOrders(), 0);
     return () => window.clearTimeout(timer);
+  }, [loadOrders]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadOrders(true);
+      }
+    }, 30_000);
+
+    return () => window.clearInterval(interval);
   }, [loadOrders]);
 
   async function cancelOrder(order: Order) {
@@ -194,7 +229,9 @@ export default function OrdersPage() {
 
         <div className="mb-5 flex items-center justify-between gap-4">
           <p className="text-sm text-slate-400">
-            {loading ? "正在加载…" : `共 ${orders.length} 条订单`}
+            {loading
+              ? "正在加载…"
+              : `共 ${orders.length} 条订单 · 每 30 秒自动刷新`}
           </p>
           <button
             type="button"

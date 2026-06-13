@@ -79,10 +79,13 @@ export default function AdminOrdersPage() {
   async function loadOrders(
     nextStatus = status,
     nextPage = page,
-    nextSearch = search
+    nextSearch = search,
+    silent = false
   ) {
-    setLoading(true);
-    setMessage("");
+    if (!silent) {
+      setLoading(true);
+      setMessage("");
+    }
 
     try {
       const {
@@ -122,7 +125,9 @@ export default function AdminOrdersPage() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "加载充值订单失败");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }
 
@@ -132,6 +137,33 @@ export default function AdminOrdersPage() {
     // Initial admin order load only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        !processingId &&
+        !paymentOrder
+      ) {
+        void loadOrders(status, page, search, true);
+      }
+    }, 30_000);
+
+    return () => window.clearInterval(interval);
+    // Poll using the current filters without interrupting admin operations.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, page, search, processingId, paymentOrder]);
+
+  useEffect(() => {
+    document.title =
+      status === "pending" && total > 0
+        ? `(${total}) 待处理充值订单 - 极智岛 AI`
+        : "充值订单管理 - 极智岛 AI";
+
+    return () => {
+      document.title = "极智岛 AI";
+    };
+  }, [status, total]);
 
   async function updateOrder(
     order: Order,
@@ -321,6 +353,7 @@ export default function AdminOrdersPage() {
           <span>
             {loading ? "正在加载订单…" : `共 ${total} 条订单`}
             {search ? `，搜索“${search}”` : ""}
+            {!loading ? " · 每 30 秒自动刷新" : ""}
           </span>
           <button
             type="button"
