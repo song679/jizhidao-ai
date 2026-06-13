@@ -64,8 +64,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-8">
-        <header className="mb-12 flex items-center justify-between border-b border-slate-800 pb-6">
+      <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-5 py-8 sm:px-6">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6 md:mb-12">
           <Link href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
           </Link>
@@ -83,7 +83,7 @@ export default function Home() {
           </nav>
 
           {userEmail ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <a
                 href="/account"
                 className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white sm:inline-block"
@@ -107,13 +107,34 @@ export default function Home() {
           )}
         </header>
 
-        <section className="grid flex-1 items-center gap-12 py-10 md:grid-cols-[1.05fr_0.95fr]">
+        <nav className="mb-4 grid grid-cols-3 gap-2 text-center text-sm md:hidden">
+          <Link
+            href="/chat"
+            className="rounded-xl border border-cyan-400/40 px-3 py-3 font-semibold text-cyan-300"
+          >
+            AI 聊天
+          </Link>
+          <Link
+            href="/pricing"
+            className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+          >
+            套餐价格
+          </Link>
+          <Link
+            href={userEmail ? "/account" : "/login"}
+            className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+          >
+            {userEmail ? "我的账户" : "登录注册"}
+          </Link>
+        </nav>
+
+        <section className="grid flex-1 items-center gap-10 py-8 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:py-10">
           <div>
             <div className="mb-5 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-300">
               中文 AI 聚合平台
             </div>
 
-            <h1 className="text-5xl font-bold leading-tight md:text-6xl">
+            <h1 className="text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
               一个账号，
               <br />
               连接多种 AI 能力。
@@ -121,38 +142,38 @@ export default function Home() {
 
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
               极智岛 AI 支持聊天、写作、办公、电商文案、短视频脚本等场景。
-              测试阶段已接入 DeepSeek，后续将继续接入更多主流 AI 模型，
+              目前已接入 OpenAI 与 DeepSeek，可自由选择不同模型，
               让普通用户用更简单的方式解决实际问题。
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href="/chat"
-                className="rounded-full bg-cyan-400 px-7 py-3 font-semibold text-slate-950 hover:bg-cyan-300"
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:gap-4">
+              <Link
+                href={userEmail ? "/chat" : "/login"}
+                className="rounded-full bg-cyan-400 px-7 py-3 text-center font-semibold text-slate-950 hover:bg-cyan-300"
               >
-                开始使用 AI
-              </a>
+                {userEmail ? "开始使用 AI" : "免费登录体验"}
+              </Link>
 
-              <a
+              <Link
                 href="/pricing"
-                className="rounded-full border border-slate-700 px-7 py-3 font-semibold text-white hover:border-cyan-400/60 hover:text-cyan-300"
+                className="rounded-full border border-slate-700 px-7 py-3 text-center font-semibold text-white hover:border-cyan-400/60 hover:text-cyan-300"
               >
                 查看会员价格
-              </a>
+              </Link>
             </div>
 
-            <div className="mt-8 grid grid-cols-3 gap-4 text-sm text-slate-400">
+            <div className="mt-8 grid grid-cols-3 gap-2 text-center text-xs text-slate-400 sm:gap-4 sm:text-left sm:text-sm">
               <div>
-                <div className="text-2xl font-bold text-white">多场景</div>
+                <div className="text-lg font-bold text-white sm:text-2xl">多场景</div>
                 <div>聊天 / 写作 / 办公</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">点数制</div>
-                <div>使用记录清晰</div>
+                <div className="text-lg font-bold text-white sm:text-2xl">多模型</div>
+                <div>OpenAI / DeepSeek</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">低门槛</div>
-                <div>普通用户友好</div>
+                <div className="text-lg font-bold text-white sm:text-2xl">点数制</div>
+                <div>使用记录清晰</div>
               </div>
             </div>
           </div>
@@ -178,21 +199,23 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-5 flex gap-2">
-                <input
-                  className="flex-1 rounded-full border border-slate-800 bg-slate-900 px-4 py-3 text-sm outline-none placeholder:text-slate-600"
-                  placeholder="输入你的问题..."
-                />
-                <button className="rounded-full bg-cyan-400 px-5 text-sm font-semibold text-slate-950">
-                  发送
-                </button>
+              <div className="mt-5 grid gap-2 sm:grid-cols-[1fr_auto]">
+                <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-600">
+                  输入你的问题...
+                </div>
+                <Link
+                  href={userEmail ? "/chat" : "/login"}
+                  className="rounded-full bg-cyan-400 px-5 py-3 text-center text-sm font-semibold text-slate-950"
+                >
+                  去提问
+                </Link>
               </div>
             </div>
           </div>
         </section>
 
         <section className="pb-12">
-          <div className="mb-6 flex items-end justify-between gap-4">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-cyan-300">
                 核心功能
@@ -222,7 +245,7 @@ export default function Home() {
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-500">
           <span>极智岛 AI</span>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-x-5 gap-y-3">
             <Link href="/terms" className="hover:text-white">
               用户协议
             </Link>
