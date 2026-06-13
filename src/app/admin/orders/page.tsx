@@ -28,15 +28,27 @@ const statusLabels: Record<string, string> = {
   refunded: "已退款",
 };
 
+const PAGE_SIZE = 20;
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState("pending");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(true);
 
-  async function loadOrders(nextStatus = status) {
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  async function loadOrders(
+    nextStatus = status,
+    nextPage = page,
+    nextSearch = search
+  ) {
     setLoading(true);
     setMessage("");
 
@@ -50,14 +62,21 @@ export default function AdminOrdersPage() {
         return;
       }
 
-      const response = await fetch(
-        `/api/admin/orders?status=${encodeURIComponent(nextStatus)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+      const params = new URLSearchParams({
+        status: nextStatus,
+        page: String(nextPage),
+        pageSize: String(PAGE_SIZE),
+      });
+
+      if (nextSearch) {
+        params.set("search", nextSearch);
+      }
+
+      const response = await fetch(`/api/admin/orders?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         }
-      );
+      });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
@@ -66,6 +85,8 @@ export default function AdminOrdersPage() {
 
       setReady(data.ready !== false);
       setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setTotal(typeof data.total === "number" ? data.total : 0);
+      setPage(typeof data.page === "number" ? data.page : nextPage);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "加载充值订单失败");
     } finally {
@@ -129,7 +150,7 @@ export default function AdminOrdersPage() {
           ? `订单 ${order.order_no} 已到账，点数已自动增加。`
           : `订单 ${order.order_no} 已取消。`
       );
-      await loadOrders(status);
+      await loadOrders(status, page, search);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "处理订单失败");
     } finally {
@@ -187,24 +208,82 @@ export default function AdminOrdersPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {["pending", "paid", "cancelled", "all"].map((item) => (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {["pending", "paid", "cancelled", "refunded", "all"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => {
+                  setStatus(item);
+                  setPage(1);
+                  loadOrders(item, 1, search);
+                }}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  status === item
+                    ? "bg-cyan-400 text-slate-950"
+                    : "border border-slate-700 text-slate-300"
+                }`}
+              >
+                {item === "all" ? "全部订单" : statusLabels[item]}
+              </button>
+            ))}
+          </div>
+
+          <form
+            className="flex w-full max-w-md gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const nextSearch = searchInput.trim();
+              setSearch(nextSearch);
+              setPage(1);
+              loadOrders(status, 1, nextSearch);
+            }}
+          >
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="搜索订单号或用户邮箱"
+              className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
+            />
             <button
-              key={item}
-              type="button"
-              onClick={() => {
-                setStatus(item);
-                loadOrders(item);
-              }}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                status === item
-                  ? "bg-cyan-400 text-slate-950"
-                  : "border border-slate-700 text-slate-300"
-              }`}
+              type="submit"
+              disabled={loading}
+              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 disabled:opacity-50"
             >
-              {item === "all" ? "全部订单" : statusLabels[item]}
+              搜索
             </button>
-          ))}
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setPage(1);
+                  loadOrders(status, 1, "");
+                }}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300"
+              >
+                清除
+              </button>
+            )}
+          </form>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+          <span>
+            {loading ? "正在加载订单…" : `共 ${total} 条订单`}
+            {search ? `，搜索“${search}”` : ""}
+          </span>
+          <button
+            type="button"
+            onClick={() => loadOrders(status, page, search)}
+            disabled={loading}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 disabled:opacity-50"
+          >
+            刷新
+          </button>
         </div>
 
         <section className="mt-6 overflow-x-auto rounded-lg border border-slate-800">
@@ -282,6 +361,32 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
         </section>
+
+        {total > 0 && (
+          <div className="mt-5 flex items-center justify-between gap-4 text-sm">
+            <span className="text-slate-400">
+              第 {page} / {totalPages} 页
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={loading || page <= 1}
+                onClick={() => loadOrders(status, page - 1, search)}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                上一页
+              </button>
+              <button
+                type="button"
+                disabled={loading || page >= totalPages}
+                onClick={() => loadOrders(status, page + 1, search)}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

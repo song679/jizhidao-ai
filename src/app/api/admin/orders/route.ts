@@ -19,31 +19,64 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "all";
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
+  const pageSize = Math.min(
+    50,
+    Math.max(
+      10,
+      Number.parseInt(searchParams.get("pageSize") || "20", 10) || 20
+    )
+  );
+  const search = (searchParams.get("search") || "")
+    .trim()
+    .slice(0, 100)
+    .replace(/[^\p{L}\p{N}@._+-]/gu, "");
+  const rangeStart = (page - 1) * pageSize;
+  const rangeEnd = rangeStart + pageSize - 1;
   let query = context.supabaseAdmin
     .from("recharge_orders")
     .select(
-      "id, order_no, email, plan_name, amount_cents, points, status, payment_channel, payment_reference, admin_email, note, created_at, paid_at, updated_at"
+      "id, order_no, email, plan_name, amount_cents, points, status, payment_channel, payment_reference, admin_email, note, created_at, paid_at, updated_at",
+      { count: "exact" }
     )
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(rangeStart, rangeEnd);
 
   if (["pending", "paid", "cancelled", "refunded"].includes(status)) {
     query = query.eq("status", status);
   }
 
-  const { data: orders, error } = await query;
+  if (search) {
+    query = query.or(
+      `order_no.ilike.%${search}%,email.ilike.%${search}%`
+    );
+  }
+
+  const { data: orders, error, count } = await query;
 
   if (error?.code === "42P01" || error?.code === "PGRST205") {
     return NextResponse.json({
       ready: false,
       adminEmail: context.adminEmail,
       orders: [],
+      total: 0,
+      page,
+      pageSize,
     });
   }
 
   if (error) {
+    const permissionDenied = error.code === "42501";
+
     return NextResponse.json(
-      { error: "加载充值订单失败" },
+      {
+        error: permissionDenied
+          ? "订单表权限尚未配置，请执行订单权限迁移"
+          : "加载充值订单失败，请稍后重试",
+        errorCode: permissionDenied
+          ? "ORDERS_PERMISSION_DENIED"
+          : "ORDERS_QUERY_FAILED",
+      },
       { status: 500 }
     );
   }
@@ -52,6 +85,9 @@ export async function GET(request: Request) {
     ready: true,
     adminEmail: context.adminEmail,
     orders: orders || [],
+    total: count || 0,
+    page,
+    pageSize,
   });
 }
 
