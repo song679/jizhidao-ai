@@ -27,6 +27,7 @@ export default function PricingPage() {
   const [notice, setNotice] = useState("");
   const [selectedPlanName, setSelectedPlanName] = useState("");
   const [copyText, setCopyText] = useState("复制充值信息");
+  const [contactCopyText, setContactCopyText] = useState("");
   const [currentOrder, setCurrentOrder] = useState<RechargeOrder | null>(null);
   const [orders, setOrders] = useState<RechargeOrder[]>([]);
   const [orderLoading, setOrderLoading] = useState(false);
@@ -167,10 +168,22 @@ export default function PricingPage() {
     }
   }
 
+  async function copyContact(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setContactCopyText(`${label}已复制`);
+      window.setTimeout(() => setContactCopyText(""), 1600);
+    } catch (error) {
+      console.error(`复制${label}失败：`, error);
+      setContactCopyText(`复制${label}失败`);
+      window.setTimeout(() => setContactCopyText(""), 2000);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <header className="flex items-center justify-between border-b border-slate-800 pb-6">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 sm:py-10">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <Link href="/" className="text-2xl font-bold tracking-tight">
             极智岛 AI
           </Link>
@@ -188,7 +201,7 @@ export default function PricingPage() {
           </nav>
 
           {userEmail ? (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <a
                 href="/points"
                 className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 md:inline-block"
@@ -218,7 +231,30 @@ export default function PricingPage() {
           )}
         </header>
 
-        <section className="py-16 text-center">
+        {userEmail && (
+          <nav className="mt-5 grid grid-cols-3 gap-2 text-center text-sm md:hidden">
+            <Link
+              href="/points"
+              className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+            >
+              点数
+            </Link>
+            <Link
+              href="/orders"
+              className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+            >
+              订单
+            </Link>
+            <Link
+              href="/account"
+              className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+            >
+              账户
+            </Link>
+          </nav>
+        )}
+
+        <section className="py-12 text-center md:py-16">
           <p className="mx-auto mb-5 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-300">
             点数充值 / 会员套餐
           </p>
@@ -261,7 +297,7 @@ export default function PricingPage() {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`relative rounded-3xl border p-8 ${
+              className={`relative rounded-3xl border p-6 sm:p-8 ${
                 plan.highlight
                   ? "border-cyan-400 bg-slate-900 shadow-2xl shadow-cyan-950/40"
                   : "border-slate-800 bg-slate-900/60"
@@ -314,7 +350,7 @@ export default function PricingPage() {
         </section>
 
         <section className="mt-12 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8">
             <h2 className="text-2xl font-bold">如何充值</h2>
             <div className="mt-5 space-y-4 text-sm leading-7 text-slate-300">
               <p>1. 先登录网站，确认当前账号邮箱。</p>
@@ -325,7 +361,7 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-8">
+          <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6 sm:p-8">
             <h2 className="text-2xl font-bold text-cyan-100">联系管理员</h2>
             <p className="mt-5 text-sm leading-7 text-cyan-50/90">
               当前为测试阶段，暂未开放自动支付。充值前请先确认账号邮箱，避免点数加到错误账号。
@@ -333,19 +369,50 @@ export default function PricingPage() {
 
             <div className="mt-6 space-y-3 text-sm">
               <div className="rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4">
-                <p className="text-cyan-200">管理员微信</p>
-                <p className="mt-1 font-semibold text-white">{adminWechat}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-cyan-200">管理员微信</p>
+                    <p className="mt-1 break-all font-semibold text-white">
+                      {adminWechat}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyContact(adminWechat, "微信")}
+                    className="shrink-0 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs font-semibold text-cyan-100"
+                  >
+                    复制
+                  </button>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4">
-                <p className="text-cyan-200">管理员邮箱</p>
-                <p className="mt-1 font-semibold text-white">{adminEmail}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-cyan-200">管理员邮箱</p>
+                    <p className="mt-1 break-all font-semibold text-white">
+                      {adminEmail}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyContact(adminEmail, "邮箱")}
+                    className="shrink-0 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs font-semibold text-cyan-100"
+                  >
+                    复制
+                  </button>
+                </div>
               </div>
+              {contactCopyText && (
+                <p className="text-center text-xs font-semibold text-cyan-100">
+                  {contactCopyText}
+                </p>
+              )}
             </div>
           </div>
         </section>
 
-        <section className="mt-12 rounded-3xl border border-cyan-400/30 bg-slate-900/70 p-8">
+        <section className="mt-12 rounded-3xl border border-cyan-400/30 bg-slate-900/70 p-6 sm:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-2xl font-bold">发送给管理员的信息</h2>
@@ -356,7 +423,7 @@ export default function PricingPage() {
 
             <button
               onClick={copyRechargeMessage}
-              className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+              className="w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300 md:w-auto"
             >
               {copyText}
             </button>
@@ -377,8 +444,8 @@ export default function PricingPage() {
         </section>
 
         {userEmail && (
-          <section className="mt-12 rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
-            <div className="flex items-center justify-between gap-4">
+          <section className="mt-12 rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold">我的充值订单</h2>
                 <p className="mt-2 text-sm text-slate-400">
