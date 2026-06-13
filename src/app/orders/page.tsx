@@ -64,6 +64,8 @@ export default function OrdersPage() {
   const [message, setMessage] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const pendingCount = orders.filter((order) => order.status === "pending").length;
+  const paidCount = orders.filter((order) => order.status === "paid").length;
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -203,6 +205,27 @@ export default function OrdersPage() {
             刷新状态
           </button>
         </div>
+
+        {!loading && orders.length > 0 && (
+          <section className="mb-6 grid gap-3 sm:grid-cols-3">
+            {[
+              ["全部订单", orders.length, "累计创建"],
+              ["等待确认", pendingCount, "管理员核对中"],
+              ["已经到账", paidCount, "点数已入账"],
+            ].map(([label, value, note]) => (
+              <div
+                key={label}
+                className="rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-4"
+              >
+                <p className="text-xs text-slate-500">{label}</p>
+                <p className="mt-2 text-2xl font-bold text-cyan-300">
+                  {Number(value).toLocaleString()}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{note}</p>
+              </div>
+            ))}
+          </section>
+        )}
 
         <section className="space-y-4">
           {!loading && orders.length === 0 && (

@@ -14,6 +14,7 @@ type DashboardData = {
     refundedToday: number;
     todayPointsUsed: number;
     todayRecharged: number;
+    pendingOrders: number;
   };
   daily: Array<{
     date: string;
@@ -146,9 +147,14 @@ export default function AdminDashboardPage() {
             </Link>
             <Link
               href="/admin/orders"
-              className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+              className="flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
             >
               充值订单
+              {(data?.metrics.pendingOrders || 0) > 0 && (
+                <span className="rounded-full bg-amber-300 px-2 py-0.5 text-xs font-bold text-slate-950">
+                  {data?.metrics.pendingOrders}
+                </span>
+              )}
             </Link>
             <Link
               href="/admin/transactions"
@@ -246,7 +252,19 @@ export default function AdminDashboardPage() {
           </section>
         )}
 
-        <section className="grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-2 lg:grid-cols-5">
+        {(data?.metrics.pendingOrders || 0) > 0 && (
+          <Link
+            href="/admin/orders?status=pending"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-amber-100 transition hover:border-amber-300/60"
+          >
+            <span className="font-semibold">
+              有 {data?.metrics.pendingOrders} 个充值订单等待确认
+            </span>
+            <span className="text-sm">立即处理 →</span>
+          </Link>
+        )}
+
+        <section className="grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
             ["点数账户", data?.metrics.accounts ?? 0, "累计初始化用户"],
             [
@@ -268,6 +286,11 @@ export default function AdminDashboardPage() {
               "今日退还",
               data?.metrics.refundedToday ?? 0,
               "失败请求已退款",
+            ],
+            [
+              "待处理订单",
+              data?.metrics.pendingOrders ?? 0,
+              "有效期内待确认",
             ],
           ].map(([label, value, note]) => (
             <div key={label} className="bg-slate-950 px-5 py-5">

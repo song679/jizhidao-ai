@@ -42,6 +42,16 @@ export async function GET(request: Request) {
     const todayIso = todayStart.toISOString();
     const sevenDayIso = sevenDayStart.toISOString();
     const staleReservationIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const orderExpiryHours = Math.min(
+      168,
+      Math.max(
+        1,
+        Number.parseInt(process.env.ORDER_EXPIRY_HOURS || "24", 10) || 24
+      )
+    );
+    const activeOrderCutoffIso = new Date(
+      Date.now() - orderExpiryHours * 60 * 60 * 1000
+    ).toISOString();
 
     const [
       accountsResult,
@@ -50,6 +60,7 @@ export async function GET(request: Request) {
       recentActivityResult,
       todayLedgerResult,
       staleReservationsResult,
+      pendingOrdersResult,
     ] = await Promise.all([
       adminContext.supabaseAdmin
         .from("user_points")
@@ -81,6 +92,11 @@ export async function GET(request: Request) {
         .select("request_id", { count: "exact", head: true })
         .eq("status", "reserved")
         .lt("created_at", staleReservationIso),
+      adminContext.supabaseAdmin
+        .from("recharge_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending")
+        .gte("created_at", activeOrderCutoffIso),
     ]);
 
     const queryError = [
@@ -90,6 +106,7 @@ export async function GET(request: Request) {
       recentActivityResult.error,
       todayLedgerResult.error,
       staleReservationsResult.error,
+      pendingOrdersResult.error,
     ].find(Boolean);
 
     if (queryError) {
@@ -194,6 +211,7 @@ export async function GET(request: Request) {
         refundedToday,
         todayPointsUsed,
         todayRecharged,
+        pendingOrders: pendingOrdersResult.count || 0,
       },
       daily: Array.from(dailyMap.values()),
       models: Array.from(modelMap.values()).sort(
