@@ -79,8 +79,8 @@ export default function AuthCallbackPage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
-      <section className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/70 p-8 text-center shadow-2xl">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 py-8 text-white">
+      <section className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/70 p-6 text-center shadow-2xl sm:p-8">
         <div
           className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
             failed
@@ -95,13 +95,27 @@ export default function AuthCallbackPage() {
         </h1>
         <p className="mt-4 text-sm leading-7 text-slate-300">{message}</p>
 
+        {!failed && (
+          <p className="mt-4 text-xs leading-5 text-slate-500">
+            请不要重复点击登录邮件；验证完成后页面会自动进入 AI 聊天。
+          </p>
+        )}
+
         {failed && (
-          <Link
-            href="/login"
-            className="mt-6 inline-flex rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
-          >
-            重新发送登录链接
-          </Link>
+          <div className="mt-6 grid gap-3">
+            <Link
+              href="/login"
+              className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+            >
+              重新发送登录链接
+            </Link>
+            <Link
+              href="/support"
+              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300"
+            >
+              仍然无法登录，获取帮助
+            </Link>
+          </div>
         )}
       </section>
     </main>

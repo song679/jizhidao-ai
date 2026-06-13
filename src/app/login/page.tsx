@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "">("");
+  const [sentEmail, setSentEmail] = useState("");
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [accountDeleted, setAccountDeleted] = useState(false);
 
   useEffect(() => {
@@ -20,16 +23,29 @@ export default function LoginPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  async function handleLogin() {
-    const userEmail = email.trim();
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendSeconds]);
+
+  async function handleLogin(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    const userEmail = email.trim().toLowerCase();
 
     if (!userEmail) {
       setMessage("请先输入邮箱。");
+      setMessageType("error");
       return;
     }
 
     setLoading(true);
     setMessage("");
+    setMessageType("");
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -45,7 +61,11 @@ export default function LoginPage() {
 
       if (!response.ok) {
         setMessage(`发送失败：${data?.error || "请稍后再试"}`);
+        setMessageType("error");
       } else {
+        setSentEmail(userEmail);
+        setResendSeconds(60);
+        setMessageType("success");
         setMessage(
           `${data?.message ||
             "登录链接已发送到你的邮箱，请打开邮箱点击链接登录。"}${
@@ -57,6 +77,7 @@ export default function LoginPage() {
       }
     } catch {
       setMessage("发送失败：当前网络无法连接网站登录服务，请稍后重试。");
+      setMessageType("error");
     }
 
     setLoading(false);
@@ -64,8 +85,8 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-     <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-8">
-       <header className="mb-12 flex items-center justify-between border-b border-slate-800 pb-6">
+     <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-5 py-8 sm:px-6">
+       <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6 md:mb-12">
          <Link href="/" className="text-2xl font-bold tracking-tight">
            极智岛 AI
          </Link>
@@ -84,7 +105,7 @@ export default function LoginPage() {
       </header>
 
       <div className="flex flex-1 items-center justify-center">
-        <section className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl">
+        <section className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl sm:p-8">
           {accountDeleted && (
             <div className="mb-5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
               账号及相关数据已永久删除。
@@ -103,7 +124,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="mb-2 block text-sm text-slate-300">
                 邮箱地址
@@ -111,18 +132,34 @@ export default function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (messageType === "error") {
+                    setMessage("");
+                    setMessageType("");
+                  }
+                }}
+                autoComplete="email"
+                inputMode="email"
+                enterKeyHint="send"
+                required
                 placeholder="请输入你的邮箱"
                 className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
               />
             </div>
 
             <button
-              onClick={handleLogin}
-              disabled={loading}
+              type="submit"
+              disabled={loading || resendSeconds > 0}
               className="w-full rounded-2xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "发送中..." : "发送登录链接"}
+              {loading
+                ? "发送中..."
+                : resendSeconds > 0
+                  ? `${resendSeconds} 秒后可重新发送`
+                  : sentEmail
+                    ? "重新发送登录链接"
+                    : "发送登录链接"}
             </button>
 
             <p className="text-center text-xs leading-5 text-slate-500">
@@ -144,8 +181,28 @@ export default function LoginPage() {
             </p>
 
             {message && (
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300">
+              <div
+                className={`rounded-2xl border p-4 text-sm leading-6 ${
+                  messageType === "success"
+                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
+                    : "border-rose-400/30 bg-rose-400/10 text-rose-100"
+                }`}
+              >
                 {message}
+              </div>
+            )}
+
+            {messageType === "success" && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
+                <p className="font-bold text-white">接下来这样操作：</p>
+                <ol className="mt-2 space-y-1">
+                  <li>1. 打开 {sentEmail} 的收件箱。</li>
+                  <li>2. 找到极智岛 AI 登录邮件，垃圾邮件也请检查。</li>
+                  <li>3. 点击最新邮件中的链接，浏览器会自动返回网站。</li>
+                </ol>
+                <p className="mt-3 text-xs text-slate-500">
+                  登录链接为一次性链接；重复发送后请使用最新一封邮件。
+                </p>
               </div>
             )}
 
@@ -170,7 +227,7 @@ export default function LoginPage() {
               </Link>
               。
             </p>
-          </div>
+          </form>
         </section>
       </div>
     </section>
