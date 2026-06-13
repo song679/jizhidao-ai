@@ -19,6 +19,7 @@ type Order = {
   note: string | null;
   created_at: string;
   paid_at: string | null;
+  updated_at: string;
 };
 
 const statusLabels: Record<string, string> = {
@@ -29,6 +30,21 @@ const statusLabels: Record<string, string> = {
 };
 
 const PAGE_SIZE = 20;
+
+const paymentChannelLabels: Record<string, string> = {
+  manual: "人工收款",
+  wechat: "微信",
+  alipay: "支付宝",
+  bank: "银行转账",
+};
+
+function formatDate(value: string | null) {
+  if (!value) return "—";
+
+  return new Date(value).toLocaleString("zh-CN", {
+    hour12: false,
+  });
+}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -41,6 +57,11 @@ export default function AdminOrdersPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
+  const [paymentChannel, setPaymentChannel] = useState("wechat");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentNote, setPaymentNote] = useState("");
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -101,15 +122,15 @@ export default function AdminOrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function updateOrder(order: Order, action: "complete" | "cancel") {
-    const confirmed = window.confirm(
-      action === "complete"
-        ? `确认订单 ${order.order_no} 已收款，并为 ${order.email} 增加 ${order.points} 点吗？`
-        : `确定取消订单 ${order.order_no} 吗？`
-    );
-
-    if (!confirmed) return;
-
+  async function updateOrder(
+    order: Order,
+    action: "complete" | "cancel",
+    payment?: {
+      channel: string;
+      reference: string;
+      note: string;
+    }
+  ) {
     setProcessingId(order.id);
     setMessage("");
 
@@ -132,11 +153,9 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({
           orderId: order.id,
           action,
-          paymentChannel: "manual",
-          note:
-            action === "complete"
-              ? "管理员确认线下收款"
-              : "管理员取消订单",
+          paymentChannel: payment?.channel || "manual",
+          paymentReference: payment?.reference || "",
+          note: payment?.note || "管理员取消订单",
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -150,12 +169,28 @@ export default function AdminOrdersPage() {
           ? `订单 ${order.order_no} 已到账，点数已自动增加。`
           : `订单 ${order.order_no} 已取消。`
       );
+      setSelectedOrder(null);
+      setPaymentOrder(null);
+      setPaymentReference("");
+      setPaymentNote("");
       await loadOrders(status, page, search);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "处理订单失败");
     } finally {
       setProcessingId(null);
     }
+  }
+
+  function openPaymentDialog(order: Order) {
+    setPaymentOrder(order);
+    setPaymentChannel("wechat");
+    setPaymentReference("");
+    setPaymentNote("");
+  }
+
+  function cancelOrder(order: Order) {
+    if (!window.confirm(`确定取消订单 ${order.order_no} 吗？`)) return;
+    void updateOrder(order, "cancel");
   }
 
   return (
@@ -320,16 +355,22 @@ export default function AdminOrdersPage() {
                     {statusLabels[order.status] || order.status}
                   </td>
                   <td className="px-4 py-4 text-xs text-slate-500">
-                    {new Date(order.created_at).toLocaleString("zh-CN", {
-                      hour12: false,
-                    })}
+                    {formatDate(order.created_at)}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    {order.status === "pending" && (
-                      <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrder(order)}
+                        className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300"
+                      >
+                        详情
+                      </button>
+                      {order.status === "pending" && (
+                        <>
                         <button
                           type="button"
-                          onClick={() => updateOrder(order, "complete")}
+                          onClick={() => openPaymentDialog(order)}
                           disabled={processingId === order.id}
                           className="rounded-lg bg-cyan-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
                         >
@@ -337,14 +378,15 @@ export default function AdminOrdersPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => updateOrder(order, "cancel")}
+                          onClick={() => cancelOrder(order)}
                           disabled={processingId === order.id}
                           className="rounded-lg border border-rose-400/40 px-3 py-2 text-xs text-rose-300 disabled:opacity-50"
                         >
                           取消
                         </button>
-                      </div>
-                    )}
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -388,6 +430,167 @@ export default function AdminOrdersPage() {
           </div>
         )}
       </div>
+
+      {selectedOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="order-detail-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedOrder(null);
+          }}
+        >
+          <section className="max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-cyan-300">订单详情</p>
+                <h2 id="order-detail-title" className="mt-1 font-mono text-lg font-bold">
+                  {selectedOrder.order_no}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrder(null)}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300"
+              >
+                关闭
+              </button>
+            </div>
+
+            <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+              {[
+                ["用户邮箱", selectedOrder.email],
+                ["订单状态", statusLabels[selectedOrder.status] || selectedOrder.status],
+                ["套餐", selectedOrder.plan_name],
+                ["支付金额", `¥${formatPlanPrice(selectedOrder.amount_cents)}`],
+                ["充值点数", `${selectedOrder.points.toLocaleString()} 点`],
+                [
+                  "支付渠道",
+                  selectedOrder.payment_channel
+                    ? paymentChannelLabels[selectedOrder.payment_channel] ||
+                      selectedOrder.payment_channel
+                    : "—",
+                ],
+                ["支付流水号", selectedOrder.payment_reference || "—"],
+                ["处理管理员", selectedOrder.admin_email || "—"],
+                ["创建时间", formatDate(selectedOrder.created_at)],
+                ["到账时间", formatDate(selectedOrder.paid_at)],
+                ["最后更新", formatDate(selectedOrder.updated_at)],
+                ["备注", selectedOrder.note || "—"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-slate-950/70 p-4">
+                  <dt className="text-xs text-slate-500">{label}</dt>
+                  <dd className="mt-2 break-words text-slate-100">{value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {selectedOrder.status === "pending" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOrder(null);
+                  openPaymentDialog(selectedOrder);
+                }}
+                className="mt-6 w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950"
+              >
+                填写收款信息并确认到账
+              </button>
+            )}
+          </section>
+        </div>
+      )}
+
+      {paymentOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="payment-dialog-title"
+        >
+          <form
+            className="max-h-full w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void updateOrder(paymentOrder, "complete", {
+                channel: paymentChannel,
+                reference: paymentReference.trim(),
+                note: paymentNote.trim() || "管理员确认收款",
+              });
+            }}
+          >
+            <p className="text-sm font-semibold text-cyan-300">确认收款</p>
+            <h2 id="payment-dialog-title" className="mt-1 text-2xl font-bold">
+              为用户充值 {paymentOrder.points.toLocaleString()} 点
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              {paymentOrder.email} · ¥{formatPlanPrice(paymentOrder.amount_cents)}
+            </p>
+
+            <div className="mt-6 space-y-5">
+              <label className="block text-sm">
+                <span className="mb-2 block text-slate-300">支付渠道</span>
+                <select
+                  value={paymentChannel}
+                  onChange={(event) => setPaymentChannel(event.target.value)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                >
+                  <option value="wechat">微信</option>
+                  <option value="alipay">支付宝</option>
+                  <option value="bank">银行转账</option>
+                  <option value="manual">其他人工收款</option>
+                </select>
+              </label>
+
+              <label className="block text-sm">
+                <span className="mb-2 block text-slate-300">
+                  支付流水号（选填）
+                </span>
+                <input
+                  value={paymentReference}
+                  onChange={(event) => setPaymentReference(event.target.value)}
+                  maxLength={100}
+                  placeholder="填写微信、支付宝或银行交易单号"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                />
+              </label>
+
+              <label className="block text-sm">
+                <span className="mb-2 block text-slate-300">管理员备注（选填）</span>
+                <textarea
+                  value={paymentNote}
+                  onChange={(event) => setPaymentNote(event.target.value)}
+                  maxLength={200}
+                  rows={3}
+                  placeholder="例如：已核对微信收款记录"
+                  className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={processingId === paymentOrder.id}
+                onClick={() => setPaymentOrder(null)}
+                className="rounded-xl border border-slate-700 px-5 py-3 text-slate-300 disabled:opacity-50"
+              >
+                返回
+              </button>
+              <button
+                type="submit"
+                disabled={processingId === paymentOrder.id}
+                className="rounded-xl bg-cyan-400 px-5 py-3 font-bold text-slate-950 disabled:opacity-50"
+              >
+                {processingId === paymentOrder.id
+                  ? "正在处理…"
+                  : "确认到账并增加点数"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </main>
   );
 }

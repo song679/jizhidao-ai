@@ -10,6 +10,8 @@ function isUuid(value: unknown): value is string {
   );
 }
 
+const paymentChannels = new Set(["manual", "wechat", "alipay", "bank"]);
+
 export async function GET(request: Request) {
   const context = await authorizeAdmin(request);
 
@@ -162,7 +164,9 @@ export async function PATCH(request: Request) {
     {
       p_order_id: orderId,
       p_admin_email: context.adminEmail,
-      p_payment_channel: paymentChannel || "manual",
+      p_payment_channel: paymentChannels.has(paymentChannel)
+        ? paymentChannel
+        : "manual",
       p_payment_reference: paymentReference || null,
       p_note: note || null,
     }
