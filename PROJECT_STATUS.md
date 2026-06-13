@@ -55,6 +55,8 @@
 - 用户选择套餐并创建待付款订单。
 - `/orders` 用户订单中心，可查看状态、支付信息和订单详情。
 - 用户可取消自己尚未处理的待确认订单，服务端验证订单归属。
+- 待确认订单默认 24 小时有效，过期后自动关闭。
+- 管理员确认到账前会再次检查有效期，避免误处理旧订单。
 - 订单表和订单状态：`pending`、`paid`、`cancelled`、`refunded`。
 - 管理员订单页面 `/admin/orders`。
 - 管理员确认到账后，原子更新订单、用户余额和点数流水。
@@ -175,6 +177,7 @@ grant select, insert, update, delete
 - `CHAT_DAILY_POINT_LIMIT`
 - `NEXT_PUBLIC_ADMIN_EMAIL`
 - `NEXT_PUBLIC_ADMIN_WECHAT`
+- `ORDER_EXPIRY_HOURS`（可选，默认 24，范围 1–168）
 
 Vercel 修改环境变量后必须重新部署生产版本。
 

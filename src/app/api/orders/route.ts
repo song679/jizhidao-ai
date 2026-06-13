@@ -67,11 +67,55 @@ function isMissingOrdersTable(error: { code?: string } | null) {
   return error?.code === "42P01" || error?.code === "PGRST205";
 }
 
+const ORDER_EXPIRY_HOURS = Math.min(
+  168,
+  Math.max(
+    1,
+    Number.parseInt(process.env.ORDER_EXPIRY_HOURS || "24", 10) || 24
+  )
+);
+
+function getOrderExpiryCutoff() {
+  return new Date(
+    Date.now() - ORDER_EXPIRY_HOURS * 60 * 60 * 1000
+  ).toISOString();
+}
+
+async function expireUserOrders(
+  supabaseAdmin: NonNullable<
+    Awaited<ReturnType<typeof getUserContext>>["supabaseAdmin"]
+  >,
+  userId: string
+) {
+  return supabaseAdmin
+    .from("recharge_orders")
+    .update({
+      status: "cancelled",
+      note: "订单超过有效期，系统自动关闭",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .lt("created_at", getOrderExpiryCutoff());
+}
+
 export async function GET(request: Request) {
   const context = await getUserContext(request);
 
   if (context.error || !context.user || !context.supabaseAdmin) {
     return context.error;
+  }
+
+  const { error: expireError } = await expireUserOrders(
+    context.supabaseAdmin,
+    context.user.id
+  );
+
+  if (expireError && !isMissingOrdersTable(expireError)) {
+    return NextResponse.json(
+      { error: "更新订单状态失败，请稍后重试" },
+      { status: 500 }
+    );
   }
 
   const { data: orders, error } = await context.supabaseAdmin
@@ -126,6 +170,25 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "请选择有效的充值套餐" },
       { status: 400 }
+    );
+  }
+
+  const { error: expireError } = await expireUserOrders(
+    context.supabaseAdmin,
+    context.user.id
+  );
+
+  if (isMissingOrdersTable(expireError)) {
+    return NextResponse.json(
+      { error: "订单服务正在初始化，请稍后再试", ready: false },
+      { status: 503 }
+    );
+  }
+
+  if (expireError) {
+    return NextResponse.json(
+      { error: "更新历史订单状态失败，请稍后重试" },
+      { status: 500 }
     );
   }
 

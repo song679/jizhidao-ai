@@ -38,6 +38,17 @@ const paymentChannelLabels: Record<string, string> = {
   bank: "银行转账",
 };
 
+function getOrderStatusLabel(order: Order) {
+  if (
+    order.status === "cancelled" &&
+    order.note?.includes("超过有效期")
+  ) {
+    return "已过期";
+  }
+
+  return statusLabels[order.status] || order.status;
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
 
@@ -352,7 +363,7 @@ export default function AdminOrdersPage() {
                     {order.points.toLocaleString()}
                   </td>
                   <td className="px-4 py-4">
-                    {statusLabels[order.status] || order.status}
+                    {getOrderStatusLabel(order)}
                   </td>
                   <td className="px-4 py-4 text-xs text-slate-500">
                     {formatDate(order.created_at)}
@@ -461,7 +472,7 @@ export default function AdminOrdersPage() {
             <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
               {[
                 ["用户邮箱", selectedOrder.email],
-                ["订单状态", statusLabels[selectedOrder.status] || selectedOrder.status],
+                ["订单状态", getOrderStatusLabel(selectedOrder)],
                 ["套餐", selectedOrder.plan_name],
                 ["支付金额", `¥${formatPlanPrice(selectedOrder.amount_cents)}`],
                 ["充值点数", `${selectedOrder.points.toLocaleString()} 点`],

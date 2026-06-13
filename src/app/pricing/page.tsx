@@ -16,6 +16,7 @@ type RechargeOrder = {
   amount_cents: number;
   points: number;
   status: string;
+  note?: string | null;
   created_at: string;
   paid_at?: string | null;
 };
@@ -406,7 +407,9 @@ export default function PricingPage() {
                           : order.status === "pending"
                             ? "待管理员确认"
                             : order.status === "cancelled"
-                              ? "已取消"
+                              ? order.note?.includes("超过有效期")
+                                ? "已过期"
+                                : "已取消"
                               : "已退款"}
                       </p>
                     </div>

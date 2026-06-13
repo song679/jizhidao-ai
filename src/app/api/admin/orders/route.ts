@@ -11,12 +11,56 @@ function isUuid(value: unknown): value is string {
 }
 
 const paymentChannels = new Set(["manual", "wechat", "alipay", "bank"]);
+const ORDER_EXPIRY_HOURS = Math.min(
+  168,
+  Math.max(
+    1,
+    Number.parseInt(process.env.ORDER_EXPIRY_HOURS || "24", 10) || 24
+  )
+);
+
+function getOrderExpiryCutoff() {
+  return new Date(
+    Date.now() - ORDER_EXPIRY_HOURS * 60 * 60 * 1000
+  ).toISOString();
+}
+
+async function expirePendingOrders(
+  supabaseAdmin: NonNullable<
+    Awaited<ReturnType<typeof authorizeAdmin>>["supabaseAdmin"]
+  >
+) {
+  return supabaseAdmin
+    .from("recharge_orders")
+    .update({
+      status: "cancelled",
+      note: "订单超过有效期，系统自动关闭",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("status", "pending")
+    .lt("created_at", getOrderExpiryCutoff());
+}
 
 export async function GET(request: Request) {
   const context = await authorizeAdmin(request);
 
   if (context.error) {
     return context.error;
+  }
+
+  const { error: expireError } = await expirePendingOrders(
+    context.supabaseAdmin
+  );
+
+  if (
+    expireError &&
+    expireError.code !== "42P01" &&
+    expireError.code !== "PGRST205"
+  ) {
+    return NextResponse.json(
+      { error: "更新过期订单失败，请稍后重试" },
+      { status: 500 }
+    );
   }
 
   const { searchParams } = new URL(request.url);
@@ -148,6 +192,41 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       { error: "不支持的订单操作" },
       { status: 400 }
+    );
+  }
+
+  const { data: pendingOrder, error: pendingOrderError } =
+    await context.supabaseAdmin
+      .from("recharge_orders")
+      .select("id, created_at, status")
+      .eq("id", orderId)
+      .maybeSingle();
+
+  if (pendingOrderError) {
+    return NextResponse.json(
+      { error: "检查订单状态失败" },
+      { status: 500 }
+    );
+  }
+
+  if (
+    pendingOrder?.status === "pending" &&
+    pendingOrder.created_at < getOrderExpiryCutoff()
+  ) {
+    await context.supabaseAdmin
+      .from("recharge_orders")
+      .update({
+        status: "cancelled",
+        admin_email: context.adminEmail,
+        note: "订单超过有效期，系统自动关闭",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId)
+      .eq("status", "pending");
+
+    return NextResponse.json(
+      { error: "订单已超过有效期，不能确认到账" },
+      { status: 409 }
     );
   }
 

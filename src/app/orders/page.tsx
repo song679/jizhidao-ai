@@ -41,6 +41,17 @@ const paymentChannelLabels: Record<string, string> = {
   bank: "银行转账",
 };
 
+function getOrderStatusLabel(order: Order) {
+  if (
+    order.status === "cancelled" &&
+    order.note?.includes("超过有效期")
+  ) {
+    return "已过期";
+  }
+
+  return statusLabels[order.status] || order.status;
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString("zh-CN", { hour12: false });
@@ -220,7 +231,7 @@ export default function OrdersPage() {
                         statusClasses[order.status] || statusClasses.cancelled
                       }`}
                     >
-                      {statusLabels[order.status] || order.status}
+                      {getOrderStatusLabel(order)}
                     </span>
                   </div>
                   <p className="mt-2 break-all font-mono text-xs text-slate-500">
@@ -297,7 +308,7 @@ export default function OrdersPage() {
             <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
               {[
                 ["套餐", selectedOrder.plan_name],
-                ["订单状态", statusLabels[selectedOrder.status] || selectedOrder.status],
+                ["订单状态", getOrderStatusLabel(selectedOrder)],
                 ["支付金额", `¥${formatPlanPrice(selectedOrder.amount_cents)}`],
                 ["到账点数", `${selectedOrder.points.toLocaleString()} 点`],
                 [
