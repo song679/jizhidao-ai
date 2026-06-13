@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 极智岛 AI
 
-## Getting Started
+中文多模型 AI 聚合平台，基于 Next.js、Supabase 和 Vercel 构建，支持 OpenAI / DeepSeek、邮箱登录、聊天计费、充值订单及管理员后台。
 
-First, run the development server:
+生产网站：[https://www.jizhidao-ai.com](https://www.jizhidao-ai.com)
 
-```bash
+## 恢复项目
+
+如果 Codex 对话丢失、换电脑或需要从零接管项目，请按顺序阅读：
+
+1. [`RECOVERY_INDEX.md`](RECOVERY_INDEX.md) — 恢复入口和最短操作步骤
+2. [`PROJECT_STATUS.md`](PROJECT_STATUS.md) — 当前功能、环境变量和待办事项
+3. [`docs/PROJECT_RECOVERY_ARCHIVE.md`](docs/PROJECT_RECOVERY_ARCHIVE.md) — 完整技术恢复档案
+4. [`docs/DEVELOPMENT_HISTORY.md`](docs/DEVELOPMENT_HISTORY.md) — 项目开发过程和重要决策
+5. [`OPERATIONS.md`](OPERATIONS.md) — 生产运维、备份、回滚和故障处理
+
+以上文件不保存任何 API 密钥、数据库密码或用户聊天内容。
+
+## 本地开发
+
+```powershell
+Copy-Item .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 [http://localhost:3000](http://localhost:3000)。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+提交前检查：
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+npx tsc --noEmit
+npm run lint
+git diff --check
+```
 
-## Learn More
+## 部署
 
-To learn more about Next.js, take a look at the following resources:
+- GitHub：`song679/jizhidao-ai`
+- 主分支：`main`
+- Vercel 监听 `main` 并自动部署
+- 环境变量修改后必须重新部署
+- Supabase 登录回调必须允许：
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+https://www.jizhidao-ai.com/auth/callback
+https://www.jizhidao-ai.com/**
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 安全提醒
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 不要提交 `.env.local`
+- 不要将 Supabase Secret Key、OpenAI Key、DeepSeek Key 写入文档
+- 不要把数据库导出、用户邮箱、聊天记录或订单明细上传到公开仓库
