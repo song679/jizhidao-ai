@@ -15,15 +15,31 @@ function firstConfiguredEmail() {
     .find(Boolean);
 }
 
-export default function SupportPage() {
+function normalizeErrorCode(value: unknown) {
+  if (typeof value !== "string") return "";
+
+  return value
+    .trim()
+    .replace(/[^A-Za-z0-9_-]/g, "")
+    .slice(0, 80);
+}
+
+export default async function SupportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
   const supportEmail = firstConfiguredEmail() || "songzhewen1997@126.com";
   const adminWechat =
     process.env.NEXT_PUBLIC_ADMIN_WECHAT || "请通过管理员邮箱联系";
+  const initialErrorCode = normalizeErrorCode(params.error);
 
   return (
     <SupportClient
       supportEmail={supportEmail}
       adminWechat={adminWechat}
+      initialErrorCode={initialErrorCode}
     />
   );
 }

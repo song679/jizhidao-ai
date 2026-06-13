@@ -16,15 +16,20 @@ const issueTypes = [
 export default function SupportClient({
   supportEmail,
   adminWechat,
+  initialErrorCode,
 }: {
   supportEmail: string;
   adminWechat: string;
+  initialErrorCode: string;
 }) {
   const [userEmail, setUserEmail] = useState("");
-  const [issueType, setIssueType] = useState(issueTypes[0]);
+  const [issueType, setIssueType] = useState(
+    initialErrorCode ? "其他问题" : issueTypes[0]
+  );
   const [description, setDescription] = useState("");
   const [currentPage, setCurrentPage] = useState("");
   const [feedbackTime, setFeedbackTime] = useState("");
+  const [browserInfo, setBrowserInfo] = useState("");
   const [copyText, setCopyText] = useState("复制问题信息");
 
   useEffect(() => {
@@ -35,6 +40,13 @@ export default function SupportClient({
           hour12: false,
           timeZone: "Asia/Shanghai",
         })
+      );
+      setBrowserInfo(
+        [
+          navigator.userAgent,
+          `${window.innerWidth}×${window.innerHeight}`,
+          navigator.onLine ? "网络在线" : "网络离线",
+        ].join(" | ")
       );
     }, 0);
 
@@ -51,11 +63,21 @@ export default function SupportClient({
         "极智岛 AI 问题反馈",
         `问题类型：${issueType}`,
         `登录邮箱：${userEmail || "未登录/请手动填写"}`,
+        `故障编号：${initialErrorCode || "无"}`,
         `发生页面：${currentPage || "请手动填写"}`,
         `问题描述：${description.trim() || "请补充问题现象和操作步骤"}`,
         `反馈时间：${feedbackTime || "提交时自动生成"}`,
+        `浏览器信息：${browserInfo || "正在获取"}`,
       ].join("\n"),
-    [currentPage, description, feedbackTime, issueType, userEmail]
+    [
+      browserInfo,
+      currentPage,
+      description,
+      feedbackTime,
+      initialErrorCode,
+      issueType,
+      userEmail,
+    ]
   );
 
   const mailHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
@@ -106,6 +128,14 @@ export default function SupportClient({
             选择问题类型并简单描述现象，页面会自动整理登录邮箱和发生页面，方便管理员更快定位。
             请勿发送密码、验证码或 API 密钥。
           </p>
+          {initialErrorCode && (
+            <div className="mt-5 inline-flex rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+              已自动关联故障编号：
+              <span className="ml-2 font-mono font-semibold">
+                {initialErrorCode}
+              </span>
+            </div>
+          )}
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
@@ -127,6 +157,17 @@ export default function SupportClient({
                   ))}
                 </select>
               </label>
+
+              {initialErrorCode && (
+                <label className="grid gap-2 text-sm">
+                  <span className="font-semibold text-slate-200">故障编号</span>
+                  <input
+                    value={initialErrorCode}
+                    readOnly
+                    className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-mono text-slate-400 outline-none"
+                  />
+                </label>
+              )}
 
               <label className="grid gap-2 text-sm">
                 <span className="font-semibold text-slate-200">问题描述</span>
@@ -189,6 +230,7 @@ export default function SupportClient({
                 <li>• 出现问题的大致时间</li>
                 <li>• 使用的功能或 AI 模型</li>
                 <li>• 页面显示的错误提示</li>
+                <li>• 页面显示的故障编号</li>
                 <li>• 必要时附上截图</li>
               </ul>
             </div>
