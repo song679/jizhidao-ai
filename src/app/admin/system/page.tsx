@@ -208,7 +208,7 @@ export default function AdminSystemPage() {
                           ? statusClasses.ok
                           : item.required
                             ? statusClasses.error
-                            : statusClasses.warning
+                            : "border-slate-600 bg-slate-800 text-slate-300"
                       }`}
                     >
                       {item.configured ? "已配置" : "未配置"}
@@ -216,6 +216,9 @@ export default function AdminSystemPage() {
                   </div>
                 ))}
               </div>
+              <p className="mt-3 text-xs text-slate-500">
+                可选变量未配置不会影响系统总体状态；至少配置一个 AI 服务商即可提供聊天服务。
+              </p>
             </section>
 
             <section className="mt-8">

@@ -98,6 +98,23 @@ export async function GET(request: Request) {
     orderFunctionError?.code === "PGRST202" ||
     orderFunctionError?.code === "42883";
   const checks: SystemCheck[] = [
+    {
+      id: "service:ai-provider",
+      label: "AI 服务商",
+      status:
+        process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY
+          ? "ok"
+          : "error",
+      detail:
+        process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY
+          ? [
+              process.env.OPENAI_API_KEY ? "OpenAI" : null,
+              process.env.DEEPSEEK_API_KEY ? "DeepSeek" : null,
+            ]
+              .filter(Boolean)
+              .join("、") + " 已配置"
+          : "至少需要配置一个 AI 服务商密钥",
+    },
     ...tableResults,
     {
       id: "function:complete_recharge_order",
@@ -213,8 +230,7 @@ export async function GET(request: Request) {
     failedChecks.length > 0 ||
     failedIntegrityChecks.length > 0
       ? "error"
-      : environment.some((item) => !item.configured) ||
-          warningIntegrityChecks.length > 0
+      : warningIntegrityChecks.length > 0
         ? "warning"
         : "ok";
 
