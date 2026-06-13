@@ -187,6 +187,12 @@ export default function PricingPage() {
                 点数明细
               </a>
               <a
+                href="/orders"
+                className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 md:inline-block"
+              >
+                我的订单
+              </a>
+              <a
                 href="/chat"
                 className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
               >
@@ -350,7 +356,12 @@ export default function PricingPage() {
                   管理员确认到账后，订单状态和点数余额会同步更新。
                 </p>
               </div>
-              <span className="text-xs text-slate-500">最近 20 条</span>
+              <Link
+                href="/orders"
+                className="text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+              >
+                查看全部与订单详情 →
+              </Link>
             </div>
 
             <div className="mt-6 divide-y divide-slate-800 border-y border-slate-800">

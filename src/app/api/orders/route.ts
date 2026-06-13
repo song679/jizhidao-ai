@@ -77,7 +77,7 @@ export async function GET(request: Request) {
   const { data: orders, error } = await context.supabaseAdmin
     .from("recharge_orders")
     .select(
-      "id, order_no, plan_id, plan_name, amount_cents, points, status, payment_channel, created_at, paid_at"
+      "id, order_no, plan_id, plan_name, amount_cents, points, status, payment_channel, payment_reference, note, created_at, paid_at, updated_at"
     )
     .eq("user_id", context.user.id)
     .order("created_at", { ascending: false })
@@ -199,4 +199,69 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ order }, { status: 201 });
+}
+
+export async function PATCH(request: Request) {
+  const context = await getUserContext(request);
+
+  if (context.error || !context.user || !context.supabaseAdmin) {
+    return context.error;
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const orderId = typeof body?.orderId === "string" ? body.orderId : "";
+  const action = body?.action;
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      orderId
+    )
+  ) {
+    return NextResponse.json({ error: "订单标识无效" }, { status: 400 });
+  }
+
+  if (action !== "cancel") {
+    return NextResponse.json(
+      { error: "不支持的订单操作" },
+      { status: 400 }
+    );
+  }
+
+  const { data: order, error } = await context.supabaseAdmin
+    .from("recharge_orders")
+    .update({
+      status: "cancelled",
+      note: "用户主动取消订单",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .eq("user_id", context.user.id)
+    .eq("status", "pending")
+    .select(
+      "id, order_no, plan_id, plan_name, amount_cents, points, status, payment_channel, payment_reference, note, created_at, paid_at, updated_at"
+    )
+    .maybeSingle();
+
+  if (isMissingOrdersTable(error)) {
+    return NextResponse.json(
+      { error: "订单服务正在初始化，请稍后再试", ready: false },
+      { status: 503 }
+    );
+  }
+
+  if (error) {
+    return NextResponse.json(
+      { error: "取消订单失败，请稍后重试" },
+      { status: 500 }
+    );
+  }
+
+  if (!order) {
+    return NextResponse.json(
+      { error: "订单不存在、已处理或不属于当前账号" },
+      { status: 409 }
+    );
+  }
+
+  return NextResponse.json({ order });
 }
