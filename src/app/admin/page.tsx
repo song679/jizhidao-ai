@@ -340,7 +340,53 @@ export default function AdminDashboardPage() {
               <span className="text-xs text-slate-500">北京时间</span>
             </div>
 
-            <div className="mt-4 overflow-x-auto rounded-lg border border-slate-800">
+            <div className="mt-4 space-y-3 md:hidden">
+              {(data?.daily || []).map((item) => (
+                <article
+                  key={item.date}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="font-bold">{formatDate(item.date)}</p>
+                    <p className="font-bold text-cyan-300">
+                      {item.chats.toLocaleString()} 次
+                    </p>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded bg-slate-800">
+                    <div
+                      className="h-full rounded bg-cyan-400"
+                      style={{
+                        width: `${Math.max(
+                          item.chats > 0 ? 8 : 0,
+                          (item.chats / maxDailyChats) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-xl bg-slate-950/70 p-3">
+                      <p className="text-xs text-slate-500">消耗点数</p>
+                      <p className="mt-1 font-semibold">
+                        {item.pointsUsed.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-950/70 p-3 text-right">
+                      <p className="text-xs text-slate-500">充值点数</p>
+                      <p className="mt-1 font-semibold text-cyan-300">
+                        {item.recharged.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {!loading && !data?.daily.length && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-400">
+                  暂无运营数据。
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 hidden overflow-x-auto rounded-lg border border-slate-800 md:block">
               <table className="w-full min-w-[620px] text-sm">
                 <thead className="bg-slate-900 text-left text-xs text-slate-400">
                   <tr>
@@ -434,7 +480,66 @@ export default function AdminDashboardPage() {
             <span className="text-xs text-slate-500">最近 20 条</span>
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-lg border border-slate-800">
+          <div className="mt-4 space-y-3 md:hidden">
+            {(data?.recentActivity || []).map((item) => {
+              const description = parsePointDescription(item.description);
+
+              return (
+                <article
+                  key={item.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="break-all font-semibold">{item.email}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatTime(item.created_at)}
+                      </p>
+                    </div>
+                    <p
+                      className={`shrink-0 text-lg font-bold ${
+                        item.change_amount >= 0
+                          ? "text-cyan-300"
+                          : "text-rose-300"
+                      }`}
+                    >
+                      {item.change_amount >= 0 ? "+" : ""}
+                      {item.change_amount.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
+                    <div>
+                      <p className="text-xs text-slate-500">类型</p>
+                      <p className="mt-1 font-semibold">
+                        {transactionLabels[item.type] || item.type}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500">变动后余额</p>
+                      <p className="mt-1 font-semibold">
+                        {item.balance_after.toLocaleString()} 点
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-4 break-words text-sm text-slate-300">
+                    {description.note || "无说明"}
+                  </p>
+                  {description.adminEmail && (
+                    <p className="mt-2 break-all text-xs text-slate-500">
+                      操作管理员：{description.adminEmail}
+                    </p>
+                  )}
+                </article>
+              );
+            })}
+            {!loading && !data?.recentActivity.length && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-400">
+                暂无点数活动。
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 hidden overflow-x-auto rounded-lg border border-slate-800 md:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-slate-900 text-xs text-slate-400">
                 <tr>
