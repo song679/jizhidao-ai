@@ -9,8 +9,9 @@
 1. 打开 `https://www.jizhidao-ai.com/admin/system`。
 2. 确认必需环境变量全部显示“已配置”。
 3. 确认核心数据库表和订单充值函数均为“正常”。
-4. 打开 `/admin` 检查退款率、滞留请求和 AI 服务商状态。
-5. 打开 `/api/health`，确认返回 `status: healthy`。
+4. 确认业务数据一致性没有负数余额、滞留扣点或异常订单。
+5. 打开 `/admin` 检查退款率、滞留请求和 AI 服务商状态。
+6. 打开 `/api/health`，确认返回 `status: healthy`。
 
 ## 2. Supabase 暂停后的恢复
 
@@ -123,4 +124,3 @@ https://www.jizhidao-ai.com/**
 - 临时处理方法
 - 永久修复提交
 - 是否需要补偿用户点数
-

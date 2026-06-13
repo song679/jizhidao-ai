@@ -75,6 +75,7 @@
 - `/admin/transactions`：点数流水。
 - `/admin/orders`：充值订单管理。
 - `/admin/system`：环境变量、数据库表和关键函数检查。
+- 系统状态页检查负数余额、滞留扣点和异常订单数据。
 - 管理员权限由 Vercel 环境变量 `ADMIN_EMAILS` 控制。
 
 ### 法务与支持页面

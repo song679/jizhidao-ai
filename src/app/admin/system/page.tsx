@@ -27,6 +27,12 @@ type SystemData = {
     status: CheckStatus;
     detail: string;
   }>;
+  integrityChecks: Array<{
+    id: string;
+    label: string;
+    status: CheckStatus;
+    detail: string;
+  }>;
 };
 
 const statusLabels: Record<CheckStatus, string> = {
@@ -231,6 +237,35 @@ export default function AdminSystemPage() {
                     >
                       {statusLabels[check.status]}
                     </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-8">
+              <h2 className="text-xl font-bold">业务数据一致性</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                仅执行只读统计检查，不会自动修改用户余额或订单。
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {data.integrityChecks.map((check) => (
+                  <div
+                    key={check.id}
+                    className="rounded-xl border border-slate-800 bg-slate-900/60 p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-semibold">{check.label}</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          {check.detail}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses[check.status]}`}
+                      >
+                        {statusLabels[check.status]}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

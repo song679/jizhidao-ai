@@ -34,6 +34,14 @@ const requiredTables = [
   ["recharge_orders", "充值订单"],
 ] as const;
 
+const ORDER_EXPIRY_HOURS = Math.min(
+  168,
+  Math.max(
+    1,
+    Number.parseInt(process.env.ORDER_EXPIRY_HOURS || "24", 10) || 24
+  )
+);
+
 export async function GET(request: Request) {
   const context = await authorizeAdmin(request);
 
@@ -96,14 +104,113 @@ export async function GET(request: Request) {
         : "已安装",
     },
   ];
+  const staleReservationCutoff = new Date(
+    Date.now() - 10 * 60 * 1000
+  ).toISOString();
+  const expiredOrderCutoff = new Date(
+    Date.now() - ORDER_EXPIRY_HOURS * 60 * 60 * 1000
+  ).toISOString();
+  const [
+    negativeBalancesResult,
+    staleReservationsResult,
+    expiredOrdersResult,
+    incompletePaidOrdersResult,
+  ] = await Promise.all([
+    context.supabaseAdmin
+      .from("user_points")
+      .select("id", { count: "exact", head: true })
+      .lt("points", 0),
+    context.supabaseAdmin
+      .from("chat_request_ledger")
+      .select("request_id", { count: "exact", head: true })
+      .eq("status", "reserved")
+      .lt("created_at", staleReservationCutoff),
+    context.supabaseAdmin
+      .from("recharge_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .lt("created_at", expiredOrderCutoff),
+    context.supabaseAdmin
+      .from("recharge_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "paid")
+      .is("paid_at", null),
+  ]);
+  const integrityChecks: SystemCheck[] = [
+    {
+      id: "integrity:negative-balances",
+      label: "用户负数余额",
+      status: negativeBalancesResult.error
+        ? "error"
+        : (negativeBalancesResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: negativeBalancesResult.error
+        ? "检查失败"
+        : (negativeBalancesResult.count || 0) > 0
+          ? `发现 ${negativeBalancesResult.count} 个负数余额账户`
+          : "未发现负数余额",
+    },
+    {
+      id: "integrity:stale-reservations",
+      label: "滞留扣点请求",
+      status: staleReservationsResult.error
+        ? "error"
+        : (staleReservationsResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: staleReservationsResult.error
+        ? "检查失败"
+        : (staleReservationsResult.count || 0) > 0
+          ? `发现 ${staleReservationsResult.count} 个超过 10 分钟的预扣请求`
+          : "未发现滞留预扣",
+    },
+    {
+      id: "integrity:expired-orders",
+      label: "过期未关闭订单",
+      status: expiredOrdersResult.error
+        ? "error"
+        : (expiredOrdersResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: expiredOrdersResult.error
+        ? "检查失败"
+        : (expiredOrdersResult.count || 0) > 0
+          ? `发现 ${expiredOrdersResult.count} 个超过 ${ORDER_EXPIRY_HOURS} 小时的待确认订单`
+          : "未发现过期未关闭订单",
+    },
+    {
+      id: "integrity:paid-without-time",
+      label: "到账订单完整性",
+      status: incompletePaidOrdersResult.error
+        ? "error"
+        : (incompletePaidOrdersResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: incompletePaidOrdersResult.error
+        ? "检查失败"
+        : (incompletePaidOrdersResult.count || 0) > 0
+          ? `发现 ${incompletePaidOrdersResult.count} 个缺少到账时间的已支付订单`
+          : "已支付订单记录完整",
+    },
+  ];
   const missingRequiredEnvironment = environment.filter(
     (item) => item.required && !item.configured
   );
   const failedChecks = checks.filter((item) => item.status === "error");
+  const failedIntegrityChecks = integrityChecks.filter(
+    (item) => item.status === "error"
+  );
+  const warningIntegrityChecks = integrityChecks.filter(
+    (item) => item.status === "warning"
+  );
   const overallStatus: CheckStatus =
-    missingRequiredEnvironment.length > 0 || failedChecks.length > 0
+    missingRequiredEnvironment.length > 0 ||
+    failedChecks.length > 0 ||
+    failedIntegrityChecks.length > 0
       ? "error"
-      : environment.some((item) => !item.configured)
+      : environment.some((item) => !item.configured) ||
+          warningIntegrityChecks.length > 0
         ? "warning"
         : "ok";
 
@@ -121,5 +228,6 @@ export async function GET(request: Request) {
     },
     environment,
     checks,
+    integrityChecks,
   });
 }
