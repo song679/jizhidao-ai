@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { parsePointDescription } from "@/lib/point-description";
@@ -41,6 +41,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const detailRef = useRef<HTMLElement | null>(null);
 
   function formatTime(value: string) {
     return new Date(value).toLocaleString("zh-CN", { hour12: false });
@@ -129,6 +130,14 @@ export default function AdminUsersPage() {
       setTransactions(
         Array.isArray(data.transactions) ? data.transactions : []
       );
+      window.setTimeout(() => {
+        if (window.innerWidth < 1024) {
+          detailRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 0);
     } catch (error) {
       console.error("加载用户详情失败：", error);
       setMessage(error instanceof Error ? error.message : "加载用户详情失败");
@@ -164,7 +173,7 @@ export default function AdminUsersPage() {
             极智岛 AI
           </Link>
 
-          <nav className="flex items-center gap-2 text-sm">
+          <nav className="flex flex-wrap items-center gap-2 text-sm">
             <Link
               href="/admin"
               className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
@@ -207,7 +216,7 @@ export default function AdminUsersPage() {
 
         <form
           onSubmit={handleSearch}
-          className="flex gap-3 border-y border-slate-800 py-5"
+          className="flex flex-col gap-3 border-y border-slate-800 py-5 sm:flex-row"
         >
           <input
             type="search"
@@ -254,7 +263,50 @@ export default function AdminUsersPage() {
               </span>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-800">
+            <div className="space-y-3 md:hidden">
+              {loading ? (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-400">
+                  正在加载用户...
+                </div>
+              ) : users.length === 0 ? (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-10 text-center text-sm text-slate-400">
+                  没有找到符合条件的用户。
+                </div>
+              ) : (
+                users.map((user) => (
+                  <article
+                    key={user.id}
+                    className={`rounded-2xl border p-5 ${
+                      selectedUser?.id === user.id
+                        ? "border-cyan-400/50 bg-cyan-400/10"
+                        : "border-slate-800 bg-slate-900/60"
+                    }`}
+                  >
+                    <p className="break-all font-semibold">{user.email}</p>
+                    <div className="mt-4 flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-xs text-slate-500">当前余额</p>
+                        <p className="mt-1 text-2xl font-bold text-cyan-300">
+                          {user.points.toLocaleString()} 点
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void loadUserDetail(user)}
+                        className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950"
+                      >
+                        查看账户
+                      </button>
+                    </div>
+                    <p className="mt-4 text-xs text-slate-500">
+                      最近更新：{formatTime(user.updated_at)}
+                    </p>
+                  </article>
+                ))
+              )}
+            </div>
+
+            <div className="hidden overflow-x-auto rounded-lg border border-slate-800 md:block">
               <table className="w-full min-w-[620px] text-left text-sm">
                 <thead className="bg-slate-900 text-xs text-slate-400">
                   <tr>
@@ -338,7 +390,10 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          <aside className="min-w-0 border-t border-slate-800 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+          <aside
+            ref={detailRef}
+            className="min-w-0 scroll-mt-5 border-t border-slate-800 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"
+          >
             <h2 className="text-xl font-bold">账户详情</h2>
 
             {!selectedUser ? (
