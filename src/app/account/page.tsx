@@ -31,6 +31,7 @@ export default function AccountPage() {
   const [exporting, setExporting] = useState(false);
   const [deletePanelOpen, setDeletePanelOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteAcknowledged, setDeleteAcknowledged] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -154,9 +155,10 @@ export default function AccountPage() {
   async function deleteAccount() {
     if (
       !email ||
-      deleteConfirmation.trim().toLowerCase() !== email.toLowerCase()
+      deleteConfirmation.trim().toLowerCase() !== email.toLowerCase() ||
+      !deleteAcknowledged
     ) {
-      setMessage("请输入当前登录邮箱以确认注销账号。");
+      setMessage("请输入当前登录邮箱并确认已了解注销后无法恢复。");
       return;
     }
 
@@ -231,6 +233,27 @@ export default function AccountPage() {
           </p>
         </section>
 
+        <nav className="mb-6 grid grid-cols-3 gap-2 text-center text-sm md:hidden">
+          <Link
+            href="/points"
+            className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+          >
+            点数明细
+          </Link>
+          <Link
+            href="/orders"
+            className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+          >
+            我的订单
+          </Link>
+          <Link
+            href="/support"
+            className="rounded-xl border border-slate-700 px-3 py-3 text-slate-300"
+          >
+            获取帮助
+          </Link>
+        </nav>
+
         {message && (
           <div className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-100">
             {message}
@@ -295,6 +318,18 @@ export default function AccountPage() {
                 <span className="text-cyan-300">查看</span>
               </Link>
               <Link
+                href="/orders"
+                className="flex items-center justify-between px-5 py-4 text-sm hover:bg-slate-900"
+              >
+                <span>
+                  <strong className="block">我的充值订单</strong>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    查看待确认、已到账和历史订单
+                  </span>
+                </span>
+                <span className="text-cyan-300">查看</span>
+              </Link>
+              <Link
                 href="/support"
                 className="flex items-center justify-between px-5 py-4 text-sm hover:bg-slate-900"
               >
@@ -339,7 +374,7 @@ export default function AccountPage() {
                   type="button"
                   onClick={exportPersonalData}
                   disabled={exporting}
-                  className="mt-4 rounded-lg border border-cyan-400/40 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 w-full rounded-lg border border-cyan-400/40 px-4 py-3 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-2"
                 >
                   {exporting ? "正在生成..." : "导出我的数据"}
                 </button>
@@ -377,16 +412,30 @@ export default function AccountPage() {
                       className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-rose-400"
                       placeholder="请输入当前登录邮箱"
                     />
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-rose-400/20 bg-slate-950/60 p-3 text-xs leading-5 text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={deleteAcknowledged}
+                        onChange={(event) =>
+                          setDeleteAcknowledged(event.target.checked)
+                        }
+                        className="mt-1 h-4 w-4 shrink-0 accent-rose-500"
+                      />
+                      <span>
+                        我已了解账号、剩余点数、聊天记录和订单关联数据将被永久删除，且无法恢复。
+                      </span>
+                    </label>
+                    <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
                       <button
                         type="button"
                         onClick={deleteAccount}
                         disabled={
                           deleting ||
                           deleteConfirmation.trim().toLowerCase() !==
-                            email.toLowerCase()
+                            email.toLowerCase() ||
+                          !deleteAcknowledged
                         }
-                        className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-rose-500 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50 sm:py-2"
                       >
                         {deleting ? "正在注销..." : "永久删除账号"}
                       </button>
@@ -395,9 +444,10 @@ export default function AccountPage() {
                         onClick={() => {
                           setDeletePanelOpen(false);
                           setDeleteConfirmation("");
+                          setDeleteAcknowledged(false);
                         }}
                         disabled={deleting}
-                        className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:text-white disabled:opacity-50"
+                        className="rounded-lg border border-slate-700 px-4 py-3 text-sm text-slate-300 hover:text-white disabled:opacity-50 sm:py-2"
                       >
                         取消
                       </button>
@@ -408,7 +458,7 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={logout}
-                className="mt-6 rounded-lg border border-rose-400/40 px-4 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-400/10"
+                className="mt-6 w-full rounded-lg border border-rose-400/40 px-4 py-3 text-sm font-semibold text-rose-300 hover:bg-rose-400/10 sm:w-auto sm:py-2"
               >
                 安全退出登录
               </button>
