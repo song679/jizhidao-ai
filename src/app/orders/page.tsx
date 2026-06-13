@@ -16,6 +16,7 @@ type Order = {
   payment_reference: string | null;
   note: string | null;
   created_at: string;
+  expires_at: string;
   paid_at: string | null;
   updated_at: string;
 };
@@ -300,6 +301,11 @@ export default function OrdersPage() {
                   <p className="mt-2 text-sm text-slate-400">
                     创建于 {formatDate(order.created_at)}
                   </p>
+                  {order.status === "pending" && (
+                    <p className="mt-1 text-xs text-amber-300">
+                      请于 {formatDate(order.expires_at)} 前完成付款联系
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 sm:justify-end">
@@ -380,6 +386,7 @@ export default function OrdersPage() {
                 ],
                 ["支付流水号", selectedOrder.payment_reference || "—"],
                 ["创建时间", formatDate(selectedOrder.created_at)],
+                ["订单截止", formatDate(selectedOrder.expires_at)],
                 ["到账时间", formatDate(selectedOrder.paid_at)],
                 ["最后更新", formatDate(selectedOrder.updated_at)],
                 ["订单备注", selectedOrder.note || "—"],

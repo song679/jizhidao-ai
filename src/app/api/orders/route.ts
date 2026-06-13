@@ -81,6 +81,16 @@ function getOrderExpiryCutoff() {
   ).toISOString();
 }
 
+function withOrderExpiry<T extends { created_at: string }>(order: T) {
+  return {
+    ...order,
+    expires_at: new Date(
+      new Date(order.created_at).getTime() +
+        ORDER_EXPIRY_HOURS * 60 * 60 * 1000
+    ).toISOString(),
+  };
+}
+
 async function expireUserOrders(
   supabaseAdmin: NonNullable<
     Awaited<ReturnType<typeof getUserContext>>["supabaseAdmin"]
@@ -143,7 +153,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ready: true,
-    orders: orders || [],
+    orders: (orders || []).map(withOrderExpiry),
   });
 }
 
@@ -225,7 +235,7 @@ export async function POST(request: Request) {
 
   if (existingOrder) {
     return NextResponse.json({
-      order: existingOrder,
+      order: withOrderExpiry(existingOrder),
       reused: true,
     });
   }
@@ -261,7 +271,10 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ order }, { status: 201 });
+  return NextResponse.json(
+    { order: withOrderExpiry(order) },
+    { status: 201 }
+  );
 }
 
 export async function PATCH(request: Request) {
@@ -326,5 +339,5 @@ export async function PATCH(request: Request) {
     );
   }
 
-  return NextResponse.json({ order });
+  return NextResponse.json({ order: withOrderExpiry(order) });
 }

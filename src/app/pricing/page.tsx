@@ -18,6 +18,7 @@ type RechargeOrder = {
   status: string;
   note?: string | null;
   created_at: string;
+  expires_at: string;
   paid_at?: string | null;
 };
 
@@ -144,6 +145,13 @@ export default function PricingPage() {
     `充值金额：¥${selectedPlan.price}`,
     `到账点数：${selectedPlan.pointsLabel}`,
     `订单编号：${currentOrder?.order_no || "选择套餐后自动生成"}`,
+    `订单有效期：${
+      currentOrder
+        ? new Date(currentOrder.expires_at).toLocaleString("zh-CN", {
+            hour12: false,
+          })
+        : "创建订单后显示"
+    }`,
     "付款截图：已发送/稍后发送",
   ].join("\n");
 
@@ -228,6 +236,25 @@ export default function PricingPage() {
               {notice}
             </div>
           )}
+
+          {currentOrder && (
+            <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-left text-sm leading-6 text-amber-100">
+              <p className="font-bold">订单已进入待确认状态</p>
+              <p className="mt-1">
+                请在{" "}
+                {new Date(currentOrder.expires_at).toLocaleString("zh-CN", {
+                  hour12: false,
+                })}{" "}
+                前完成付款并把订单号、登录邮箱和付款截图发送给管理员。超过有效期后订单会自动关闭。
+              </p>
+              <Link
+                href="/orders"
+                className="mt-2 inline-block font-semibold text-amber-200 underline"
+              >
+                查看订单详情与状态
+              </Link>
+            </div>
+          )}
         </section>
 
         <section className="grid gap-6 md:grid-cols-3">
@@ -293,7 +320,8 @@ export default function PricingPage() {
               <p>1. 先登录网站，确认当前账号邮箱。</p>
               <p>2. 点击上方套餐按钮，页面会自动生成充值信息。</p>
               <p>3. 复制充值信息，连同付款截图一起发送给管理员。</p>
-              <p>4. 管理员确认后，会手动为你的账号增加对应点数。</p>
+              <p>4. 请在订单显示的有效期内付款，过期订单会自动关闭。</p>
+              <p>5. 管理员确认后，系统会为你的账号增加对应点数。</p>
             </div>
           </div>
 
