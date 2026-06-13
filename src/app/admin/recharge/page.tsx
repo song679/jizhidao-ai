@@ -37,6 +37,11 @@ export default function AdminRechargePage() {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [recentRecharges, setRecentRecharges] = useState<RechargeRecord[]>([]);
+  const numericAmount = Number(amount);
+  const projectedBalance =
+    accountPoints !== null && Number.isFinite(numericAmount)
+      ? accountPoints + (operation === "deduct" ? -numericAmount : numericAmount)
+      : null;
 
   function formatTime(value: string) {
     return new Date(value).toLocaleString("zh-CN", {
@@ -217,13 +222,13 @@ export default function AdminRechargePage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <header className="flex items-center justify-between border-b border-slate-800 pb-6">
+      <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-10">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <Link href="/" className="text-2xl font-bold">
             极智岛 AI
           </Link>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex flex-wrap items-center gap-2">
             <Link
               href="/admin"
               className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
@@ -280,7 +285,7 @@ export default function AdminRechargePage() {
                 <span className="mb-2 block text-sm font-semibold text-slate-300">
                   操作类型
                 </span>
-                <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-2">
+                <div className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-2 sm:grid-cols-2">
                   {[
                     {
                       id: "add" as const,
@@ -329,7 +334,7 @@ export default function AdminRechargePage() {
                 <span className="mb-2 block text-sm font-semibold text-slate-300">
                   用户登录邮箱
                 </span>
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <input
                     type="email"
                     value={targetEmail}
@@ -345,7 +350,7 @@ export default function AdminRechargePage() {
                     type="button"
                     onClick={lookupAccount}
                     disabled={lookupLoading || !authorized}
-                    className="shrink-0 rounded-lg border border-cyan-400/40 px-5 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="shrink-0 rounded-lg border border-cyan-400/40 px-5 py-3 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {lookupLoading ? "查询中..." : "查询账号"}
                   </button>
@@ -404,6 +409,53 @@ export default function AdminRechargePage() {
               </label>
             </div>
 
+            {accountPoints !== null && (
+              <section className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
+                <p className="text-sm font-bold text-cyan-200">提交前核对</p>
+                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
+                  <div>
+                    <dt className="text-xs text-slate-500">当前余额</dt>
+                    <dd className="mt-1 font-bold">
+                      {accountPoints.toLocaleString()} 点
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-slate-500">本次变动</dt>
+                    <dd
+                      className={`mt-1 font-bold ${
+                        operation === "deduct"
+                          ? "text-rose-300"
+                          : "text-cyan-300"
+                      }`}
+                    >
+                      {operation === "deduct" ? "-" : "+"}
+                      {Number.isFinite(numericAmount)
+                        ? numericAmount.toLocaleString()
+                        : "0"}{" "}
+                      点
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-slate-500">预计余额</dt>
+                    <dd
+                      className={`mt-1 font-bold ${
+                        (projectedBalance ?? 0) < 0
+                          ? "text-rose-300"
+                          : "text-emerald-300"
+                      }`}
+                    >
+                      {(projectedBalance ?? accountPoints).toLocaleString()} 点
+                    </dd>
+                  </div>
+                </dl>
+                {(projectedBalance ?? 0) < 0 && (
+                  <p className="mt-4 text-sm text-rose-200">
+                    扣减后余额会小于 0，系统不会允许提交，请减少扣减点数。
+                  </p>
+                )}
+              </section>
+            )}
+
             {message && (
               <div
                 className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
@@ -422,7 +474,8 @@ export default function AdminRechargePage() {
                 loading ||
                 accessChecking ||
                 !authorized ||
-                accountPoints === null
+                accountPoints === null ||
+                (projectedBalance ?? 0) < 0
               }
               className="mt-8 w-full rounded-lg bg-cyan-400 px-6 py-4 font-bold text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
