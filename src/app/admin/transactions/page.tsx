@@ -329,7 +329,81 @@ export default function AdminTransactionsPage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
+          <div className="space-y-3 md:hidden">
+            {loading ? (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-12 text-center text-sm text-slate-400">
+                正在加载流水...
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-12 text-center text-sm text-slate-400">
+                没有找到符合条件的流水。
+              </div>
+            ) : (
+              transactions.map((transaction) => {
+                const description = parsePointDescription(
+                  transaction.description
+                );
+
+                return (
+                  <article
+                    key={transaction.id}
+                    className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="break-all font-semibold">
+                          {transaction.email}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatTime(transaction.created_at)}
+                        </p>
+                      </div>
+                      <p
+                        className={`shrink-0 text-lg font-bold ${
+                          transaction.change_amount >= 0
+                            ? "text-cyan-300"
+                            : "text-rose-300"
+                        }`}
+                      >
+                        {transaction.change_amount >= 0 ? "+" : ""}
+                        {transaction.change_amount.toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
+                      <div>
+                        <p className="text-xs text-slate-500">流水类型</p>
+                        <p className="mt-1 font-semibold">
+                          {transactionLabels[transaction.type] ||
+                            transaction.type}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">变动后余额</p>
+                        <p className="mt-1 font-semibold">
+                          {transaction.balance_after.toLocaleString()} 点
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 text-sm leading-6">
+                      <p className="text-xs text-slate-500">说明</p>
+                      <p className="mt-1 break-words text-slate-300">
+                        {description.note || "无说明"}
+                      </p>
+                      {description.adminEmail && (
+                        <p className="mt-2 break-all text-xs text-slate-500">
+                          操作管理员：{description.adminEmail}
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-lg border border-slate-800 md:block">
             <table className="w-full min-w-[1000px] text-left text-sm">
               <thead className="bg-slate-900 text-xs text-slate-400">
                 <tr>
