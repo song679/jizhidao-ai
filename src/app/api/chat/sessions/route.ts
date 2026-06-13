@@ -89,8 +89,9 @@ export async function GET(request: Request) {
       .limit(20);
 
     if (sessionsError) {
+      console.error("查询历史会话失败：", sessionsError.message);
       return NextResponse.json(
-        { error: "查询历史会话失败", detail: sessionsError.message },
+        { error: "查询历史会话失败" },
         { status: 500 }
       );
     }
@@ -132,8 +133,9 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
+      console.error("创建聊天会话失败：", insertError.message);
       return NextResponse.json(
-        { error: "创建聊天会话失败", detail: insertError.message },
+        { error: "创建聊天会话失败" },
         { status: 500 }
       );
     }
@@ -178,8 +180,9 @@ export async function DELETE(request: Request) {
         .maybeSingle();
 
     if (sessionQueryError) {
+      console.error("查询聊天会话失败：", sessionQueryError.message);
       return NextResponse.json(
-        { error: "查询聊天会话失败", detail: sessionQueryError.message },
+        { error: "查询聊天会话失败" },
         { status: 500 }
       );
     }
@@ -198,8 +201,9 @@ export async function DELETE(request: Request) {
       .eq("user_id", user.id);
 
     if (messagesDeleteError) {
+      console.error("删除会话消息失败：", messagesDeleteError.message);
       return NextResponse.json(
-        { error: "删除会话消息失败", detail: messagesDeleteError.message },
+        { error: "删除会话消息失败" },
         { status: 500 }
       );
     }
@@ -211,8 +215,9 @@ export async function DELETE(request: Request) {
       .eq("user_id", user.id);
 
     if (sessionDeleteError) {
+      console.error("删除聊天会话失败：", sessionDeleteError.message);
       return NextResponse.json(
-        { error: "删除聊天会话失败", detail: sessionDeleteError.message },
+        { error: "删除聊天会话失败" },
         { status: 500 }
       );
     }

@@ -41,8 +41,9 @@ export async function GET(request: Request) {
           .maybeSingle();
 
       if (userError) {
+        console.error("查询用户信息失败：", userError.message);
         return NextResponse.json(
-          { error: "查询用户信息失败", detail: userError.message },
+          { error: "查询用户信息失败" },
           { status: 500 }
         );
       }
@@ -65,8 +66,9 @@ export async function GET(request: Request) {
           .limit(30);
 
       if (transactionsError) {
+        console.error("查询用户点数流水失败：", transactionsError.message);
         return NextResponse.json(
-          { error: "查询用户点数流水失败", detail: transactionsError.message },
+          { error: "查询用户点数流水失败" },
           { status: 500 }
         );
       }
@@ -102,8 +104,9 @@ export async function GET(request: Request) {
       .range(from, to);
 
     if (usersError) {
+      console.error("查询用户列表失败：", usersError.message);
       return NextResponse.json(
-        { error: "查询用户列表失败", detail: usersError.message },
+        { error: "查询用户列表失败" },
         { status: 500 }
       );
     }

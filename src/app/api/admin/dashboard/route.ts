@@ -93,8 +93,9 @@ export async function GET(request: Request) {
     ].find(Boolean);
 
     if (queryError) {
+      console.error("加载运营数据失败：", queryError.message);
       return NextResponse.json(
-        { error: "加载运营数据失败", detail: queryError.message },
+        { error: "加载运营数据失败" },
         { status: 500 }
       );
     }

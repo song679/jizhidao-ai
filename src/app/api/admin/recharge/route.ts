@@ -25,11 +25,9 @@ export async function GET(request: Request) {
           .limit(20);
 
       if (rechargeQueryError) {
+        console.error("查询最近充值记录失败：", rechargeQueryError.message);
         return NextResponse.json(
-          {
-            error: "查询最近充值记录失败",
-            detail: rechargeQueryError.message,
-          },
+          { error: "查询最近充值记录失败" },
           { status: 500 }
         );
       }
@@ -56,8 +54,9 @@ export async function GET(request: Request) {
         .maybeSingle();
 
     if (targetPointsError) {
+      console.error("查询用户账号失败：", targetPointsError.message);
       return NextResponse.json(
-        { error: "查询用户账号失败", detail: targetPointsError.message },
+        { error: "查询用户账号失败" },
         { status: 500 }
       );
     }
@@ -78,8 +77,9 @@ export async function GET(request: Request) {
       });
 
     if (authUsersError) {
+      console.error("查询登录用户失败：", authUsersError.message);
       return NextResponse.json(
-        { error: "查询登录用户失败", detail: authUsersError.message },
+        { error: "查询登录用户失败" },
         { status: 500 }
       );
     }
@@ -154,8 +154,9 @@ export async function POST(request: Request) {
     let targetPoints = existingTargetPoints;
 
     if (targetPointsError) {
+      console.error("查询用户账号失败：", targetPointsError.message);
       return NextResponse.json(
-        { error: "查询用户账号失败", detail: targetPointsError.message },
+        { error: "查询用户账号失败" },
         { status: 500 }
       );
     }
@@ -168,8 +169,9 @@ export async function POST(request: Request) {
         });
 
       if (authUsersError) {
+        console.error("查询登录用户失败：", authUsersError.message);
         return NextResponse.json(
-          { error: "查询登录用户失败", detail: authUsersError.message },
+          { error: "查询登录用户失败" },
           { status: 500 }
         );
       }
@@ -197,11 +199,12 @@ export async function POST(request: Request) {
           .single();
 
       if (createPointsError || !createdPoints) {
+        console.error(
+          "初始化用户点数失败：",
+          createPointsError?.message || "未返回新建点数账户"
+        );
         return NextResponse.json(
-          {
-            error: "初始化用户点数失败",
-            detail: createPointsError?.message,
-          },
+          { error: "初始化用户点数失败" },
           { status: 500 }
         );
       }
@@ -259,8 +262,9 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (updatePointsError) {
+      console.error("更新用户点数失败：", updatePointsError.message);
       return NextResponse.json(
-        { error: "更新用户点数失败", detail: updatePointsError.message },
+        { error: "更新用户点数失败" },
         { status: 500 }
       );
     }

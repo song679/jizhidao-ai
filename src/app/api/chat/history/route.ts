@@ -65,8 +65,9 @@ export async function GET(request: Request) {
       .limit(20);
 
     if (messagesError) {
+      console.error("查询聊天记录失败：", messagesError.message);
       return NextResponse.json(
-        { error: "查询聊天记录失败", detail: messagesError.message },
+        { error: "查询聊天记录失败" },
         { status: 500 }
       );
     }
@@ -153,8 +154,9 @@ export async function DELETE(request: Request) {
     const { error: deleteError } = await deleteQuery;
 
     if (deleteError) {
+      console.error("清空聊天记录失败：", deleteError.message);
       return NextResponse.json(
-        { error: "清空聊天记录失败", detail: deleteError.message },
+        { error: "清空聊天记录失败" },
         { status: 500 }
       );
     }

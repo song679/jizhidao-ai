@@ -68,8 +68,9 @@ export async function GET(request: Request) {
         .single();
 
     if (pointsQueryError && pointsQueryError.code !== "PGRST116") {
+      console.error("查询用户点数失败：", pointsQueryError.message);
       return NextResponse.json(
-        { error: "查询用户点数失败", detail: pointsQueryError.message },
+        { error: "查询用户点数失败" },
         { status: 500 }
       );
     }
@@ -86,8 +87,9 @@ export async function GET(request: Request) {
         });
 
       if (insertError) {
+        console.error("初始化用户点数失败：", insertError.message);
         return NextResponse.json(
-          { error: "初始化用户点数失败", detail: insertError.message },
+          { error: "初始化用户点数失败" },
           { status: 500 }
         );
       }
@@ -119,11 +121,9 @@ export async function GET(request: Request) {
         .limit(30);
 
     if (transactionQueryError) {
+      console.error("查询点数流水失败：", transactionQueryError.message);
       return NextResponse.json(
-        {
-          error: "查询点数流水失败",
-          detail: transactionQueryError.message,
-        },
+        { error: "查询点数流水失败" },
         { status: 500 }
       );
     }

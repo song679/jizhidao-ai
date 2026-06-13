@@ -106,8 +106,9 @@ export async function GET(request: Request) {
       : await query.order("created_at", { ascending: false }).range(from, to);
 
     if (result.error) {
+      console.error("查询点数流水失败：", result.error.message);
       return NextResponse.json(
-        { error: "查询点数流水失败", detail: result.error.message },
+        { error: "查询点数流水失败" },
         { status: 500 }
       );
     }
