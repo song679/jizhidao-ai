@@ -43,6 +43,7 @@ Copy-Item .env.example .env.local
 | `supabase/migrations/` | 已纳入版本管理的数据库迁移 |
 | `supabase/schema-snapshots/` | 生产数据库纯结构快照及安全导出说明 |
 | `.github/workflows/production-smoke.yml` | 每日生产公开功能自动检查 |
+| `.github/workflows/code-quality.yml` | 每次推送和 PR 的 TypeScript、ESLint 门禁 |
 
 ## 4. 新 Codex 对话开场词
 

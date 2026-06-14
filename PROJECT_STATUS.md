@@ -1,9 +1,9 @@
 # 极智岛 AI 项目状态档案
 
-> 用途：当 Codex 对话丢失、换电脑或开启新对话时，用本文件恢复项目上下文。  
+> 用途：当 Codex 对话丢失、换电脑或开启新对话时，用本文件恢复项目上下文。
 > 最后更新：2026-06-14（北京时间）
-> 生产网站：https://www.jizhidao-ai.com  
-> GitHub：https://github.com/song679/jizhidao-ai  
+> 生产网站：https://www.jizhidao-ai.com
+> GitHub：https://github.com/song679/jizhidao-ai
 > 当前分支：`main`
 
 ## 1. 技术栈
@@ -115,6 +115,7 @@
 - 提供 Supabase `public` schema 安全导出脚本，自动阻止业务数据或疑似密钥进入结构快照。
 - 提供无密钥生产冒烟测试，检查公开页面、健康接口、安全响应头和错误域名跳转。
 - GitHub Actions 每天北京时间 09:15 自动执行生产冒烟检查，失败时保存诊断日志。
+- GitHub Actions 在每次推送和 Pull Request 时自动执行 TypeScript、ESLint 与格式门禁。
 - 站点 URL 已集中由 `NEXT_PUBLIC_SITE_URL` 管理，metadata、robots、sitemap、系统诊断和登录回调不再分别硬编码生产域名。
 - 主要生产代码已经提交并推送到 GitHub。
 

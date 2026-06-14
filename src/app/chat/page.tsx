@@ -115,7 +115,7 @@ export default function ChatPage() {
 
     getChatConfig();
   }, []);
-  
+
   useEffect(() => {
   async function getUser() {
   const {

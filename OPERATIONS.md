@@ -14,6 +14,8 @@ npm run test:production
 
 GitHub Actions 中的 `Production smoke check` 会在每天北京时间 09:15 自动执行，也可以在 GitHub → Actions → Production smoke check → Run workflow 手动运行。失败日志保留 14 天；要及时收到通知，需要在 GitHub 账户通知设置中启用 Actions 失败邮件或网页通知。
 
+`Code quality` 工作流会在每次推送 `main` 或创建 Pull Request 时运行 `npm ci`、TypeScript 和 ESLint。它不使用生产密钥，只检查代码质量；该工作流失败时应先修复再继续部署。
+
 如果首先提示 `DNS preflight failed`，不要排查 Next.js 代码；应检查域名是否过期、Nameserver 和 Vercel Domains 要求的 DNS 记录。
 
 如果提示 `Public DNS is healthy, but the Windows resolver still has stale DNS data`，说明公网已经恢复，仅当前电脑仍缓存旧结果。执行 `ipconfig /flushdns`、重启浏览器或临时使用 `1.1.1.1`，不要重复修改 DNS 记录。
