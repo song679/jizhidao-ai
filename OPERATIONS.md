@@ -6,6 +6,14 @@
 
 建议每周至少检查一次：
 
+```powershell
+npm run test:production
+```
+
+该命令不需要登录或密钥，会检查生产公开页面、健康接口、HTTPS 跳转、安全响应头、robots、sitemap 和意外 localhost 地址。
+
+如果首先提示 `DNS preflight failed`，不要排查 Next.js 代码；应检查域名是否过期、Nameserver 和 Vercel Domains 要求的 DNS 记录。
+
 1. 打开 `https://www.jizhidao-ai.com/admin/system`。
 2. 确认必需环境变量全部显示“已配置”。
 3. 确认核心数据库表和订单充值函数均为“正常”。
@@ -111,6 +119,7 @@ https://www.jizhidao-ai.com/**
 
 ## 9. 上线检查清单
 
+- [ ] `npm run test:production` 全部通过
 - [ ] 普通新邮箱能够注册登录
 - [ ] 手机邮箱 Magic Link 能返回生产网站
 - [ ] DeepSeek 模型正常回复

@@ -239,6 +239,14 @@ git diff --check
 
 ### 生产
 
+先执行自动公开检查：
+
+```powershell
+npm run test:production
+```
+
+该检查不登录账户，不执行聊天或订单写入操作。
+
 1. `/api/health` 返回健康。
 2. `/admin/system` 必需环境变量和关键表/函数正常。
 3. 普通邮箱 Magic Link 登录成功。

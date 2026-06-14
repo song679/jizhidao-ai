@@ -7,7 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "db:schema:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Export-SupabaseSchema.ps1"
+    "db:schema:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Export-SupabaseSchema.ps1",
+    "test:production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke.ps1"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

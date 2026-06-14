@@ -27,7 +27,8 @@ Copy-Item .env.example .env.local
 3. 阅读 `docs/PROJECT_RECOVERY_ARCHIVE.md`。
 4. 阅读最近提交：`git log --oneline -30`。
 5. 运行 `npx tsc --noEmit`、`npm run lint`。
-6. 启动 `npm run dev`，测试登录、聊天、点数和订单。
+6. 运行 `npm run test:production` 检查正式网站公开功能。
+7. 启动 `npm run dev`，测试登录、聊天、点数和订单。
 
 ## 3. 文档地图
 
@@ -36,6 +37,7 @@ Copy-Item .env.example .env.local
 | `PROJECT_STATUS.md` | 当前已完成内容、环境变量、迁移和待办 |
 | `docs/PROJECT_RECOVERY_ARCHIVE.md` | 架构、路由、数据库、部署和恢复全过程 |
 | `docs/DEVELOPMENT_HISTORY.md` | 从项目恢复到当前阶段的开发里程碑 |
+| `docs/INCIDENT_LOG.md` | 生产故障、诊断结果与恢复记录 |
 | `OPERATIONS.md` | 日常检查、备份、回滚和生产故障处理 |
 | `.env.example` | 环境变量名称与安全示例，不含真实密钥 |
 | `supabase/migrations/` | 已纳入版本管理的数据库迁移 |
@@ -55,3 +57,4 @@ Copy-Item .env.example .env.local
 - `.env.local` 被 Git 忽略；真实密钥应保存在 Vercel、Supabase 和密码管理器中。
 - 当前仓库缺少项目早期四张基础表的原始建表迁移，详情见完整恢复档案。
 - 使用 `npm run db:schema:export` 可安全生成不含业务数据的结构快照。
+- 2026-06-14 检测到生产域名 DNS 为 NXDOMAIN，恢复前查看 `docs/INCIDENT_LOG.md`。
