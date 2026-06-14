@@ -1,6 +1,6 @@
 # 极智岛 AI 项目恢复入口
 
-> 最后更新：2026-06-13（北京时间）
+> 最后更新：2026-06-14（北京时间）
 > 本文件是对话丢失、换电脑、重装环境或交接项目时的第一入口。
 
 ## 1. 当前项目位置
@@ -39,6 +39,7 @@ Copy-Item .env.example .env.local
 | `OPERATIONS.md` | 日常检查、备份、回滚和生产故障处理 |
 | `.env.example` | 环境变量名称与安全示例，不含真实密钥 |
 | `supabase/migrations/` | 已纳入版本管理的数据库迁移 |
+| `supabase/schema-snapshots/` | 生产数据库纯结构快照及安全导出说明 |
 
 ## 4. 新 Codex 对话开场词
 
@@ -53,3 +54,4 @@ Copy-Item .env.example .env.local
 - GitHub 不保存生产数据库内容、用户邮箱清单、聊天消息或订单明细。
 - `.env.local` 被 Git 忽略；真实密钥应保存在 Vercel、Supabase 和密码管理器中。
 - 当前仓库缺少项目早期四张基础表的原始建表迁移，详情见完整恢复档案。
+- 使用 `npm run db:schema:export` 可安全生成不含业务数据的结构快照。

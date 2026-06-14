@@ -25,6 +25,18 @@
 
 ## 3. 数据库备份
 
+### 结构快照
+
+项目仓库提供 `scripts/Export-SupabaseSchema.ps1`，用于导出不含业务数据的 `public` schema：
+
+```powershell
+$env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
+npm run db:schema:export
+Remove-Item Env:SUPABASE_DB_URL
+```
+
+生成文件位于 `supabase/schema-snapshots/`。提交前必须人工确认没有真实邮箱、聊天内容、订单或连接信息。
+
 ### Supabase 控制台备份
 
 - 付费方案优先使用 Supabase Dashboard 提供的数据库备份和时间点恢复功能。

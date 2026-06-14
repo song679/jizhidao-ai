@@ -1,6 +1,6 @@
 # 极智岛 AI 完整项目恢复档案
 
-> 档案日期：2026-06-13（北京时间）
+> 档案日期：2026-06-14（北京时间）
 > 档案基准提交：`ccef97b`（移动端聊天输入体验优化）
 > 安全声明：本文只记录配置名称和技术结构，不记录任何真实密钥、密码或用户业务数据。
 
@@ -123,6 +123,16 @@ supabase/migrations/      已版本化数据库迁移
 - 后续应从生产数据库结构生成一份**不含数据**的 schema-only 基线迁移，再纳入 Git。
 - 生成基线前不要凭猜测重写生产表结构。
 
+仓库已经提供安全导出工具：
+
+```powershell
+$env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
+npm run db:schema:export
+Remove-Item Env:SUPABASE_DB_URL
+```
+
+输出位于 `supabase/schema-snapshots/`。脚本会拒绝包含业务数据语句或常见密钥格式的文件，并检查六张核心业务表。连接生产数据库需要由项目管理员在本机手动完成，数据库连接 URI 不得写入 Git。
+
 ## 六、环境变量
 
 完整变量名称见 `.env.example`。必需核心变量：
@@ -209,7 +219,7 @@ https://www.jizhidao-ai.com/**
 
 按优先级：
 
-1. 从生产 Supabase 导出 schema-only，补齐基础迁移。
+1. 由管理员运行 `npm run db:schema:export`，从生产 Supabase 生成并人工审核 schema-only 快照。
 2. 使用普通新邮箱验收“注册 → 创建订单 → 管理员确认 → 点数到账 → 流水出现”。
 3. 接入正式在线支付和签名回调。
 4. 增加订单邮件通知和管理员提醒。

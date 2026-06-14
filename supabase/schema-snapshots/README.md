@@ -1,0 +1,43 @@
+# Supabase Schema 快照
+
+本目录用于保存生产数据库 `public` schema 的**纯结构快照**，不保存任何业务数据。
+
+Supabase CLI 的 `db dump` 会在容器中运行 `pg_dump`，执行前需要启动 Docker Desktop。
+
+## 生成快照
+
+推荐使用临时数据库连接变量：
+
+```powershell
+$env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
+npm run db:schema:export
+Remove-Item Env:SUPABASE_DB_URL
+```
+
+也可以先通过 Supabase CLI 登录并连接项目，然后运行：
+
+```powershell
+.\scripts\Export-SupabaseSchema.ps1 -Linked
+```
+
+脚本会：
+
+1. 使用 Supabase CLI 导出 `public` schema。
+2. 不使用 `--data-only`，因此不会导出用户、聊天或订单数据。
+3. 检测并拒绝包含 `COPY public.*` 或 `INSERT INTO public.*` 的文件。
+4. 检测常见 API 密钥格式。
+5. 检查六张核心业务表是否存在。
+6. 生成 SHA256 校验文件。
+
+## 提交前人工检查
+
+- 文件中应包含表、索引、函数、触发器、权限和 RLS 策略。
+- 文件中不应出现真实邮箱、聊天消息、订单记录或点数流水数据。
+- 不要提交数据库连接 URI、密码或控制台截图。
+- 快照文件应作为恢复参考，不要直接在生产库盲目执行。
+
+## 为什么需要快照
+
+项目早期四张基础表的原始建表 SQL 没有进入 Git。生成完整快照后，才能在现有生产项目损坏时准确恢复结构，而不是根据代码猜测表定义。
+
+参考：[Supabase CLI `db dump` 官方文档](https://supabase.com/docs/reference/cli/supabase-db-dump)
