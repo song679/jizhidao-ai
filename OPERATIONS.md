@@ -14,6 +14,8 @@ npm run test:production
 
 如果首先提示 `DNS preflight failed`，不要排查 Next.js 代码；应检查域名是否过期、Nameserver 和 Vercel Domains 要求的 DNS 记录。
 
+如果提示 `Public DNS is healthy, but the Windows resolver still has stale DNS data`，说明公网已经恢复，仅当前电脑仍缓存旧结果。执行 `ipconfig /flushdns`、重启浏览器或临时使用 `1.1.1.1`，不要重复修改 DNS 记录。
+
 自定义域名故障期间，可以用 Vercel 默认生产域名临时检查：
 
 ```powershell

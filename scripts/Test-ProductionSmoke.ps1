@@ -57,7 +57,63 @@ if (-not $isLocalTarget) {
     Write-Host "DNS resolved: $($baseUri.Host) -> $($addresses.IPAddressToString -join ', ')"
   }
   catch {
+    $publicAddresses = @()
+
+    if (Get-Command Resolve-DnsName -ErrorAction SilentlyContinue) {
+      try {
+        $publicAddresses = @(
+          Resolve-DnsName `
+            -Name $baseUri.Host `
+            -Type A `
+            -Server "1.1.1.1" `
+            -ErrorAction Stop |
+            Where-Object { $_.IPAddress } |
+            Select-Object -ExpandProperty IPAddress
+        )
+      }
+      catch {
+        $publicAddresses = @()
+      }
+    }
+
+    if (
+      $publicAddresses.Count -eq 0 -and
+      (Get-Command nslookup.exe -ErrorAction SilentlyContinue)
+    ) {
+      $previousErrorActionPreference = $ErrorActionPreference
+      $ErrorActionPreference = "Continue"
+      $nslookupOutput = & nslookup.exe $baseUri.Host "1.1.1.1" 2>&1 |
+        Out-String
+      $ErrorActionPreference = $previousErrorActionPreference
+      $nslookupSucceeded =
+        $nslookupOutput -match "(?im)^Name:\s+\S+" -and
+        $nslookupOutput -notmatch "(?i)Non-existent domain|can't find"
+
+      if ($nslookupSucceeded) {
+        $publicAddresses = @(
+          [regex]::Matches(
+            $nslookupOutput,
+            "\b(?:\d{1,3}\.){3}\d{1,3}\b"
+          ) |
+            ForEach-Object { $_.Value } |
+            Where-Object { $_ -ne "1.1.1.1" } |
+            Select-Object -Unique
+        )
+
+        if ($publicAddresses.Count -eq 0) {
+          $publicAddresses = @("resolved through public DNS")
+        }
+      }
+    }
+
     Write-Host ""
+    if ($publicAddresses.Count -gt 0) {
+      Write-Host "Public DNS is healthy, but the Windows resolver still has stale DNS data." -ForegroundColor Yellow
+      Write-Host "$($baseUri.Host) -> $($publicAddresses -join ', ')"
+      Write-Host "Run ipconfig /flushdns, restart the browser, or temporarily use DNS 1.1.1.1."
+      exit 2
+    }
+
     Write-Host "DNS preflight failed for $($baseUri.Host)." -ForegroundColor Red
     Write-Host "The domain does not currently resolve. Check the registrar, nameservers, and Vercel domain records."
     Write-Host $_.Exception.Message

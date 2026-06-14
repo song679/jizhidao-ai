@@ -231,7 +231,7 @@ https://www.jizhidao-ai.com/**
 
 ## 7. 当前待验证事项
 
-1. **生产阻塞：**2026-06-14 检测到 `jizhidao-ai.com` 和 `www.jizhidao-ai.com` 公网 DNS 返回 NXDOMAIN；需检查域名续费、Nameserver 和 Vercel DNS 记录，详见 `docs/INCIDENT_LOG.md`。
+1. 2026-06-14 的生产域名 DNS 故障已经恢复；部分本地 DNS 缓存可能仍需刷新，详见 `docs/INCIDENT_LOG.md`。
 2. 在 Supabase 生产项目确认已执行：
    - `20260612_recharge_orders.sql`
    - `20260612_recharge_orders_permissions.sql`
