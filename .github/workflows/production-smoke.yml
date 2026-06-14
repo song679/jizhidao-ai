@@ -1,0 +1,72 @@
+name: Production smoke check
+
+on:
+  schedule:
+    # 09:15 Asia/Shanghai every day.
+    - cron: "15 1 * * *"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Production URL to check
+        required: false
+        default: "https://www.jizhidao-ai.com"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Check production
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run production smoke checks
+        shell: pwsh
+        env:
+          DEFAULT_BASE_URL: "https://www.jizhidao-ai.com"
+          INPUT_BASE_URL: ${{ inputs.base_url }}
+        run: |
+          $baseUrl = if ($env:INPUT_BASE_URL) {
+            $env:INPUT_BASE_URL
+          } else {
+            $env:DEFAULT_BASE_URL
+          }
+
+          $output = & powershell.exe `
+            -NoProfile `
+            -ExecutionPolicy Bypass `
+            -File .\scripts\Test-ProductionSmoke.ps1 `
+            -BaseUrl $baseUrl `
+            -TimeoutSec 30 2>&1 |
+            Tee-Object -FilePath production-smoke.log
+          $exitCode = $LASTEXITCODE
+
+          @(
+            "## Production smoke check"
+            ""
+            "- Checked at: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss K')"
+            "- Target: ``$baseUrl``"
+            "- Exit code: ``$exitCode``"
+            ""
+            '```text'
+            ($output | Out-String).TrimEnd()
+            '```'
+          ) | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
+          exit $exitCode
+
+      - name: Upload failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-failure-${{ github.run_number }}
+          path: production-smoke.log
+          retention-days: 14

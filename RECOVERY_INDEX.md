@@ -42,6 +42,7 @@ Copy-Item .env.example .env.local
 | `.env.example` | 环境变量名称与安全示例，不含真实密钥 |
 | `supabase/migrations/` | 已纳入版本管理的数据库迁移 |
 | `supabase/schema-snapshots/` | 生产数据库纯结构快照及安全导出说明 |
+| `.github/workflows/production-smoke.yml` | 每日生产公开功能自动检查 |
 
 ## 4. 新 Codex 对话开场词
 
@@ -58,3 +59,4 @@ Copy-Item .env.example .env.local
 - 当前仓库缺少项目早期四张基础表的原始建表迁移，详情见完整恢复档案。
 - 使用 `npm run db:schema:export` 可安全生成不含业务数据的结构快照。
 - 2026-06-14 检测到生产域名 DNS 为 NXDOMAIN，恢复前查看 `docs/INCIDENT_LOG.md`。
+- GitHub Actions 每天北京时间 09:15 自动运行生产冒烟检查。

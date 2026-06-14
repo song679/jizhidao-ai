@@ -249,6 +249,8 @@ npm run test:production
 
 该检查不登录账户，不执行聊天或订单写入操作。
 
+仓库还包含 `.github/workflows/production-smoke.yml`，每天北京时间 09:15 自动执行同一检查。GitHub Actions 失败记录可用于判断域名、Vercel 或 Supabase 何时开始异常。
+
 1. `/api/health` 返回健康。
 2. `/admin/system` 必需环境变量和关键表/函数正常。
 3. 普通邮箱 Magic Link 登录成功。

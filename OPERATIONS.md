@@ -12,6 +12,8 @@ npm run test:production
 
 该命令不需要登录或密钥，会检查生产公开页面、健康接口、HTTPS 跳转、安全响应头、robots、sitemap 和意外 localhost 地址。
 
+GitHub Actions 中的 `Production smoke check` 会在每天北京时间 09:15 自动执行，也可以在 GitHub → Actions → Production smoke check → Run workflow 手动运行。失败日志保留 14 天；要及时收到通知，需要在 GitHub 账户通知设置中启用 Actions 失败邮件或网页通知。
+
 如果首先提示 `DNS preflight failed`，不要排查 Next.js 代码；应检查域名是否过期、Nameserver 和 Vercel Domains 要求的 DNS 记录。
 
 如果提示 `Public DNS is healthy, but the Windows resolver still has stale DNS data`，说明公网已经恢复，仅当前电脑仍缓存旧结果。执行 `ipconfig /flushdns`、重启浏览器或临时使用 `1.1.1.1`，不要重复修改 DNS 记录。
