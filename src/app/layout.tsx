@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,8 +13,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.jizhidao-ai.com"),
+  metadataBase: new URL(siteUrl),
   title: "极智岛 AI - 中文 AI 聚合平台",
   description:
     "极智岛 AI 是面向中文用户的 AI 聚合平台，支持 AI 聊天、写作、办公、电商文案、短视频脚本等场景，一个账号连接多种 AI 能力。",
@@ -32,7 +35,7 @@ export const metadata: Metadata = {
     title: "极智岛 AI - 中文 AI 聚合平台",
     description:
       "一个账号连接多种 AI 能力，支持聊天、写作、办公、电商文案、短视频脚本等场景。",
-    url: "https://www.jizhidao-ai.com",
+    url: siteUrl,
     siteName: "极智岛 AI",
     locale: "zh_CN",
     type: "website",

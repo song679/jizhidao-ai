@@ -114,6 +114,7 @@
 - `OPERATIONS.md` 记录数据库备份、恢复、部署回滚和上线检查流程。
 - 提供 Supabase `public` schema 安全导出脚本，自动阻止业务数据或疑似密钥进入结构快照。
 - 提供无密钥生产冒烟测试，检查公开页面、健康接口、安全响应头和错误域名跳转。
+- 站点 URL 已集中由 `NEXT_PUBLIC_SITE_URL` 管理，metadata、robots、sitemap、系统诊断和登录回调不再分别硬编码生产域名。
 - 主要生产代码已经提交并推送到 GitHub。
 
 ## 3. 主要页面和接口

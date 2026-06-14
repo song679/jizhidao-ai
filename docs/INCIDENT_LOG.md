@@ -32,10 +32,11 @@ www.jizhidao-ai.com   -> NXDOMAIN
 2. 确认 Nameserver 与 DNS 托管平台一致。
 3. 打开 Vercel → 项目 → Domains，查看域名要求的记录。
 4. 在 DNS 平台恢复 Vercel 要求的根域名和 `www` 记录。
-5. 等待 DNS 生效后运行：
+5. 若需临时恢复访问，可将 `NEXT_PUBLIC_SITE_URL` 改为 Vercel 默认生产域名并重新部署，同时在 Supabase Authentication Redirect URLs 添加对应 `/auth/callback`。
+6. 等待 DNS 生效后运行：
 
 ```powershell
 npm run test:production
 ```
 
-6. 全部通过后，将本故障状态改为“已恢复”，并记录恢复时间和根本原因。
+7. 全部通过后，将本故障状态改为“已恢复”，并记录恢复时间和根本原因。

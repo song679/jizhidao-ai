@@ -14,6 +14,15 @@ npm run test:production
 
 如果首先提示 `DNS preflight failed`，不要排查 Next.js 代码；应检查域名是否过期、Nameserver 和 Vercel Domains 要求的 DNS 记录。
 
+自定义域名故障期间，可以用 Vercel 默认生产域名临时检查：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke.ps1 `
+  -BaseUrl "https://你的项目.vercel.app"
+```
+
+如果临时切换正式入口，只需修改 Vercel 的 `NEXT_PUBLIC_SITE_URL` 并重新部署，同时把新地址加入 Supabase Authentication Redirect URLs。站点 metadata、robots、sitemap、系统诊断和新登录邮件都会使用该变量。
+
 1. 打开 `https://www.jizhidao-ai.com/admin/system`。
 2. 确认必需环境变量全部显示“已配置”。
 3. 确认核心数据库表和订单充值函数均为“正常”。

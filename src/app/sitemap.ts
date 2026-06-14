@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
-
-const baseUrl = "https://www.jizhidao-ai.com";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = getSiteUrl();
   const routes = [
     "",
     "/chat",

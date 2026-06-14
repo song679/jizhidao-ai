@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSiteUrl } from "@/lib/site-url";
 import { authorizeAdmin } from "@/lib/admin-auth";
 
 type CheckStatus = "ok" | "warning" | "error";
@@ -241,8 +242,7 @@ export async function GET(request: Request) {
     deployment: {
       environment: process.env.VERCEL_ENV || "local",
       region: process.env.VERCEL_REGION || "unknown",
-      siteUrl:
-        process.env.NEXT_PUBLIC_SITE_URL || "https://www.jizhidao-ai.com",
+      siteUrl: getSiteUrl(),
       commit:
         process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "unknown",
     },
