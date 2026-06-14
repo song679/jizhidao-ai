@@ -24,6 +24,9 @@ const optionalEnvironmentVariables = [
   "DEEPSEEK_API_KEY",
   "NEXT_PUBLIC_ADMIN_EMAIL",
   "NEXT_PUBLIC_ADMIN_WECHAT",
+  "NEXT_PUBLIC_SITE_NOTICE",
+  "NEXT_PUBLIC_SITE_NOTICE_LEVEL",
+  "NEXT_PUBLIC_SITE_NOTICE_URL",
 ] as const;
 
 const requiredTables = [

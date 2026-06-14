@@ -116,6 +116,7 @@
 - 提供无密钥生产冒烟测试，检查公开页面、健康接口、安全响应头和错误域名跳转。
 - GitHub Actions 每天北京时间 09:15 自动执行生产冒烟检查，失败时保存诊断日志。
 - GitHub Actions 在每次推送和 Pull Request 时自动执行 TypeScript、ESLint 与格式门禁。
+- 支持通过 Vercel 环境变量发布全站运营公告，可设置提示等级和安全详情链接。
 - 站点 URL 已集中由 `NEXT_PUBLIC_SITE_URL` 管理，metadata、robots、sitemap、系统诊断和登录回调不再分别硬编码生产域名。
 - 主要生产代码已经提交并推送到 GitHub。
 

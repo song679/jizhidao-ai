@@ -156,6 +156,7 @@ AI 至少配置一个服务商：
 - 管理员权限由 `ADMIN_EMAILS` 控制，不应硬编码到页面。
 - `NEXT_PUBLIC_SITE_URL` 是站点地址的单一配置源，用于 metadata、robots、sitemap、系统诊断和 Magic Link 回调。
 - 自定义域名故障时，可暂时改为 Vercel 默认生产域名，但必须同步加入 Supabase Authentication Redirect URLs 并重新发送登录邮件。
+- `NEXT_PUBLIC_SITE_NOTICE`、`NEXT_PUBLIC_SITE_NOTICE_LEVEL`、`NEXT_PUBLIC_SITE_NOTICE_URL` 用于发布无需改代码的全站公告。
 
 ## 七、登录恢复
 
