@@ -35,7 +35,7 @@ Remove-Variable securePassword,credential
 3. 检测并拒绝 `COPY ... FROM stdin` 数据块；函数定义内部合法的 `INSERT INTO` 不会被误判。
 4. 检测常见 API 密钥格式。
 5. 检查六张核心业务表是否存在。
-6. 生成 SHA256 校验文件。
+6. 以 UTF-8、LF 换行的规范化内容生成 SHA256 校验文件，避免 Windows 与 Linux 换行差异造成误报。
 
 脚本开始时会检查 Docker 是否已安装并运行。导出失败时会删除未完成的 SQL 文件。
 

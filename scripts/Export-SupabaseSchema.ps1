@@ -241,7 +241,16 @@ foreach ($table in $expectedTables) {
   }
 }
 
-$hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash.ToLowerInvariant()
+# Git may check out text with CRLF on Windows and LF on Linux. Normalize the
+# snapshot before hashing so GitHub Actions and local validation agree.
+$snapshotText = [System.IO.File]::ReadAllText($OutputPath)
+$canonicalSnapshot = $snapshotText.Replace("`r`n", "`n")
+$utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($OutputPath, $canonicalSnapshot, $utf8WithoutBom)
+$hashBytes = [System.Security.Cryptography.SHA256]::HashData(
+  $utf8WithoutBom.GetBytes($canonicalSnapshot)
+)
+$hash = [System.Convert]::ToHexString($hashBytes).ToLowerInvariant()
 $hashPath = "$OutputPath.sha256"
 "$hash  $([System.IO.Path]::GetFileName($OutputPath))" |
   Set-Content -LiteralPath $hashPath -Encoding ascii

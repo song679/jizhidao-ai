@@ -82,8 +82,9 @@ if (snapshotNames.length === 0) {
     }
 
     const snapshotText = snapshotBuffer.toString("utf8");
+    const canonicalSnapshot = snapshotText.replace(/\r\n/g, "\n");
     const actualHash = createHash("sha256")
-      .update(snapshotBuffer)
+      .update(canonicalSnapshot, "utf8")
       .digest("hex");
     const [expectedHash, recordedName] = hashText.trim().split(/\s+/, 2);
 
