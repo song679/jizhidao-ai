@@ -13,6 +13,30 @@ function Stop-WithMessage {
   exit 1
 }
 
+function Assert-DockerReady {
+  $dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+
+  if (-not $dockerCommand) {
+    Stop-WithMessage @"
+Docker Desktop is not installed or the docker command is not available.
+Install Docker Desktop for Windows, restart the terminal, and start Docker Desktop:
+https://docs.docker.com/desktop/setup/install/windows-install/
+
+Then verify:
+docker version
+"@
+  }
+
+  & $dockerCommand.Source info *> $null
+  if ($LASTEXITCODE -ne 0) {
+    Stop-WithMessage @"
+Docker is installed but the Docker engine is not running.
+Start Docker Desktop, wait until it reports that the engine is running, then retry:
+npm run db:schema:export
+"@
+  }
+}
+
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
@@ -44,6 +68,8 @@ $npxCommand = Get-Command npx.cmd -ErrorAction SilentlyContinue
 if (-not $npxCommand) {
   Stop-WithMessage "npx.cmd was not found. Install Node.js first."
 }
+
+Assert-DockerReady
 
 $arguments = @(
   "--yes",

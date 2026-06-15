@@ -2,13 +2,23 @@
 
 本目录用于保存生产数据库 `public` schema 的**纯结构快照**，不保存任何业务数据。
 
-Supabase CLI 的 `db dump` 会在容器中运行 `pg_dump`，执行前需要启动 Docker Desktop。
+Supabase CLI 的 `db dump` 会在容器中运行 `pg_dump`，执行前需要安装并启动 [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/)。
+
+先验证 Docker：
+
+```powershell
+docker version
+```
+
+如果命令不存在，先安装 Docker Desktop；如果只显示客户端而服务端报错，打开 Docker Desktop 并等待引擎启动。
 
 ## 生成快照
 
 推荐使用临时数据库连接变量：
 
 ```powershell
+# 在 Supabase 项目顶部点击 Connect，复制 Session pooler 连接字符串。
+# 把 [YOUR-PASSWORD] 替换为数据库密码；不要把连接字符串发到聊天或提交 GitHub。
 $env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
 npm run db:schema:export
 Remove-Item Env:SUPABASE_DB_URL
@@ -28,6 +38,8 @@ Remove-Item Env:SUPABASE_DB_URL
 4. 检测常见 API 密钥格式。
 5. 检查六张核心业务表是否存在。
 6. 生成 SHA256 校验文件。
+
+脚本开始时会检查 Docker 是否已安装并运行。导出失败时会删除未完成的 SQL 文件。
 
 ## 提交前人工检查
 

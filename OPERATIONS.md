@@ -82,10 +82,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke
 项目仓库提供 `scripts/Export-SupabaseSchema.ps1`，用于导出不含业务数据的 `public` schema：
 
 ```powershell
+$dockerVersion = docker version
 $env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
 npm run db:schema:export
 Remove-Item Env:SUPABASE_DB_URL
 ```
+
+Windows 电脑需要先安装并启动 Docker Desktop。数据库连接 URI 从 Supabase 项目顶部的 **Connect → Session pooler** 复制，并将占位密码替换为数据库密码。连接 URI 属于敏感信息，不要粘贴到聊天、截图或提交 GitHub。
 
 生成文件位于 `supabase/schema-snapshots/`。提交前必须人工确认没有真实邮箱、聊天内容、订单或连接信息。
 
