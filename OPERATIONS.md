@@ -28,6 +28,23 @@ NEXT_PUBLIC_SITE_NOTICE_URL=/support
 
 等级可选 `info`、`warning`、`critical`。链接只能使用站内 `/` 路径或 `https://` 地址。保存后重新部署；清空 `NEXT_PUBLIC_SITE_NOTICE` 并重新部署即可撤下公告。
 
+### 启用订单邮件通知
+
+项目支持通过 Resend 发送订单提醒。在 Vercel Environment Variables 配置：
+
+```text
+RESEND_API_KEY=re_...
+NOTIFICATION_FROM_EMAIL=极智岛 AI <orders@你的已验证域名>
+```
+
+保存后重新部署。启用后：
+
+- 用户创建充值订单时，`ADMIN_EMAILS` 中的管理员会收到待处理提醒。
+- 管理员确认到账后，用户会收到到账邮件。
+- 管理员取消订单后，用户会收到取消原因。
+
+邮件发送失败不会阻断创建订单、确认到账或取消订单；应在 Vercel Logs 中搜索 `Order notification email` 排查。发件域名必须先在 Resend 完成验证。
+
 如果首先提示 `DNS preflight failed`，不要排查 Next.js 代码；应检查域名是否过期、Nameserver 和 Vercel Domains 要求的 DNS 记录。
 
 如果提示 `Public DNS is healthy, but the Windows resolver still has stale DNS data`，说明公网已经恢复，仅当前电脑仍缓存旧结果。执行 `ipconfig /flushdns`、重启浏览器或临时使用 `1.1.1.1`，不要重复修改 DNS 记录。

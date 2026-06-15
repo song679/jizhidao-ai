@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { notifyOrderCreated } from "@/lib/order-notifications";
 import { getRechargePlan } from "@/lib/recharge-plans";
 
 function getOrderNumber() {
@@ -270,6 +271,14 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+
+  await notifyOrderCreated({
+    orderNo: order.order_no,
+    email: userEmail.toLowerCase(),
+    planName: order.plan_name,
+    amountCents: order.amount_cents,
+    points: order.points,
+  });
 
   return NextResponse.json(
     { order: withOrderExpiry(order) },

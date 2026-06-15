@@ -27,6 +27,8 @@ const optionalEnvironmentVariables = [
   "NEXT_PUBLIC_SITE_NOTICE",
   "NEXT_PUBLIC_SITE_NOTICE_LEVEL",
   "NEXT_PUBLIC_SITE_NOTICE_URL",
+  "RESEND_API_KEY",
+  "NOTIFICATION_FROM_EMAIL",
 ] as const;
 
 const requiredTables = [

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
+import {
+  notifyOrderCancelled,
+  notifyOrderPaid,
+} from "@/lib/order-notifications";
 
 function isUuid(value: unknown): value is string {
   return (
@@ -168,7 +172,9 @@ export async function PATCH(request: Request) {
       })
       .eq("id", orderId)
       .eq("status", "pending")
-      .select("id, order_no, status")
+      .select(
+        "id, order_no, email, plan_name, amount_cents, points, status"
+      )
       .maybeSingle();
 
     if (error) {
@@ -185,6 +191,17 @@ export async function PATCH(request: Request) {
       );
     }
 
+    await notifyOrderCancelled(
+      {
+        orderNo: order.order_no,
+        email: order.email,
+        planName: order.plan_name,
+        amountCents: order.amount_cents,
+        points: order.points,
+      },
+      note || "管理员取消订单"
+    );
+
     return NextResponse.json({ order });
   }
 
@@ -198,7 +215,9 @@ export async function PATCH(request: Request) {
   const { data: pendingOrder, error: pendingOrderError } =
     await context.supabaseAdmin
       .from("recharge_orders")
-      .select("id, created_at, status")
+      .select(
+        "id, order_no, email, plan_name, amount_cents, points, created_at, status"
+      )
       .eq("id", orderId)
       .maybeSingle();
 
@@ -209,8 +228,12 @@ export async function PATCH(request: Request) {
     );
   }
 
+  if (!pendingOrder) {
+    return NextResponse.json({ error: "订单不存在" }, { status: 404 });
+  }
+
   if (
-    pendingOrder?.status === "pending" &&
+    pendingOrder.status === "pending" &&
     pendingOrder.created_at < getOrderExpiryCutoff()
   ) {
     await context.supabaseAdmin
@@ -276,6 +299,14 @@ export async function PATCH(request: Request) {
       { status: result?.status === "not_found" ? 404 : 409 }
     );
   }
+
+  await notifyOrderPaid({
+    orderNo: result.orderNo,
+    email: result.email,
+    planName: pendingOrder.plan_name,
+    amountCents: pendingOrder.amount_cents,
+    points: result.pointsAdded,
+  });
 
   return NextResponse.json({ result });
 }
