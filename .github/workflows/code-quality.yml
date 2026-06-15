@@ -41,6 +41,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Validate database schema snapshots
+        run: npm run db:schema:validate
+
       - name: Validate repository diff
         shell: bash
         run: |

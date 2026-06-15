@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:schema:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Export-SupabaseSchema.ps1",
+    "db:schema:validate": "node scripts/Validate-SchemaSnapshots.mjs",
     "test:production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke.ps1"
   },
   "dependencies": {

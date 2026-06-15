@@ -39,6 +39,14 @@ Remove-Variable securePassword,credential
 
 脚本开始时会检查 Docker 是否已安装并运行。导出失败时会删除未完成的 SQL 文件。
 
+## 自动验证快照
+
+```powershell
+npm.cmd run db:schema:validate
+```
+
+校验器会验证每份快照的 SHA256、六张核心表、数据库函数和 RLS，并拒绝真实数据块、邮箱、数据库连接 URI、常见 API 密钥和 JWT。GitHub `Code quality` 工作流也会在每次推送和 Pull Request 时自动执行。
+
 ## 提交前人工检查
 
 - 文件中应包含表、索引、函数、触发器、权限和 RLS 策略。
