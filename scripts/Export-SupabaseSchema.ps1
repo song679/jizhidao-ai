@@ -37,6 +37,52 @@ npm run db:schema:export
   }
 }
 
+function Get-SafeDatabaseError {
+  param(
+    [string]$Output,
+    [string]$ConnectionString
+  )
+
+  $safeOutput = $Output
+  if (-not [string]::IsNullOrWhiteSpace($ConnectionString)) {
+    $safeOutput = $safeOutput.Replace($ConnectionString, "[REDACTED_DATABASE_URL]")
+  }
+
+  $safeOutput = $safeOutput `
+    -replace '(?i)postgres(?:ql)?://[^\s]+', '[REDACTED_DATABASE_URL]' `
+    -replace '(?i)(password=)[^\s]+', '$1[REDACTED]'
+
+  if ($safeOutput -match '(?i)password authentication failed|authentication failed') {
+    return "Database authentication failed. Check the database password and copy a fresh Session pooler connection string."
+  }
+
+  if ($safeOutput -match '(?i)could not translate host name|no such host|name or service not known') {
+    return "The database host could not be resolved. Copy the Session pooler connection string again and check the network."
+  }
+
+  if ($safeOutput -match '(?i)connection timed out|timeout expired|network is unreachable') {
+    return "The database connection timed out. Check the network, firewall, and Supabase project status."
+  }
+
+  if ($safeOutput -match '(?i)ssl|certificate') {
+    return "The database SSL connection failed. Use the unmodified Session pooler string from Supabase Connect."
+  }
+
+  if ($safeOutput -match '(?i)permission denied') {
+    return "Docker could not write the snapshot folder. Restart Docker Desktop and this terminal, then retry."
+  }
+
+  $lines = $safeOutput -split "\r?\n" |
+    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+    Select-Object -Last 8
+
+  if ($lines.Count -gt 0) {
+    return "Database export failed. Safe diagnostic output:`n$($lines -join "`n")"
+  }
+
+  return "Database export failed without diagnostic output."
+}
+
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
@@ -75,20 +121,51 @@ Then run: npm run db:schema:export
 "@
 }
 
+$databaseUri = $null
+if (-not [System.Uri]::TryCreate(
+  $env:SUPABASE_DB_URL,
+  [System.UriKind]::Absolute,
+  [ref]$databaseUri
+)) {
+  Stop-WithMessage "SUPABASE_DB_URL is not a valid absolute connection URI."
+}
+
+if ($databaseUri.Scheme -notin @("postgres", "postgresql")) {
+  Stop-WithMessage "SUPABASE_DB_URL must start with postgres:// or postgresql://."
+}
+
+if (
+  $env:SUPABASE_DB_URL.Contains("[YOUR-PASSWORD]") -or
+  [string]::IsNullOrWhiteSpace($databaseUri.UserInfo) -or
+  $databaseUri.UserInfo -notmatch ":"
+) {
+  Stop-WithMessage "The database password placeholder has not been replaced."
+}
+
+if (-not [string]::IsNullOrWhiteSpace($databaseUri.Fragment)) {
+  Stop-WithMessage "The database password contains an unencoded # character. URL-encode special characters or reset the password to letters and numbers."
+}
+
 Write-Host "Exporting the public schema (schema only, no business data)..."
 $outputFileName = [System.IO.Path]::GetFileName($OutputPath)
 $previousSnapshotFile = $env:SUPABASE_SNAPSHOT_FILE
 $env:SUPABASE_SNAPSHOT_FILE = $outputFileName
 
 try {
-  & docker run --rm `
-    --env SUPABASE_DB_URL `
-    --env SUPABASE_SNAPSHOT_FILE `
-    --volume "${outputDirectory}:/output" `
-    $PostgresImage `
-    sh -c 'pg_dump --dbname="$SUPABASE_DB_URL" --schema-only --schema=public --no-owner --file="/output/$SUPABASE_SNAPSHOT_FILE"'
+  $previousErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  $dockerOutput = & docker run --rm `
+      --env SUPABASE_DB_URL `
+      --env SUPABASE_SNAPSHOT_FILE `
+      --volume "${outputDirectory}:/output" `
+      $PostgresImage `
+      sh -c 'pg_dump --dbname="$SUPABASE_DB_URL" --schema-only --schema=public --no-owner --file="/output/$SUPABASE_SNAPSHOT_FILE"' 2>&1 |
+    ForEach-Object { $_.ToString() }
+  $dockerExitCode = $LASTEXITCODE
+  $ErrorActionPreference = $previousErrorActionPreference
 }
 finally {
+  $ErrorActionPreference = $previousErrorActionPreference
   if ($null -eq $previousSnapshotFile) {
     Remove-Item Env:SUPABASE_SNAPSHOT_FILE -ErrorAction SilentlyContinue
   }
@@ -97,11 +174,14 @@ finally {
   }
 }
 
-if ($LASTEXITCODE -ne 0) {
+if ($dockerExitCode -ne 0) {
   if (Test-Path -LiteralPath $OutputPath) {
     Remove-Item -LiteralPath $OutputPath -Force
   }
-  Stop-WithMessage "Supabase schema export failed. The incomplete file was removed."
+  $safeError = Get-SafeDatabaseError `
+    -Output ($dockerOutput -join "`n") `
+    -ConnectionString $env:SUPABASE_DB_URL
+  Stop-WithMessage "$safeError`nThe incomplete file was removed."
 }
 
 if (-not (Test-Path -LiteralPath $OutputPath)) {
