@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [string]$OutputPath,
-  [switch]$Linked
+  [string]$PostgresImage = "postgres:17-alpine"
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,44 +64,38 @@ if (Test-Path -LiteralPath $OutputPath) {
 $outputDirectory = Split-Path -Parent $OutputPath
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 
-$npxCommand = Get-Command npx.cmd -ErrorAction SilentlyContinue
-if (-not $npxCommand) {
-  Stop-WithMessage "npx.cmd was not found. Install Node.js first."
-}
-
 Assert-DockerReady
 
-$arguments = @(
-  "--yes",
-  "supabase",
-  "db",
-  "dump",
-  "--schema",
-  "public",
-  "--file",
-  $OutputPath
-)
-
-if ($Linked) {
-  $arguments += "--linked"
-}
-else {
-  if ([string]::IsNullOrWhiteSpace($env:SUPABASE_DB_URL)) {
-    Stop-WithMessage @"
+if ([string]::IsNullOrWhiteSpace($env:SUPABASE_DB_URL)) {
+  Stop-WithMessage @"
 SUPABASE_DB_URL is not set.
 Copy the database connection URI from Supabase and set it only for this PowerShell session:
 `$env:SUPABASE_DB_URL='postgresql://...'
 Then run: npm run db:schema:export
-Alternatively, link the project with the Supabase CLI and run:
-.\scripts\Export-SupabaseSchema.ps1 -Linked
 "@
-  }
-
-  $arguments += @("--db-url", $env:SUPABASE_DB_URL)
 }
 
 Write-Host "Exporting the public schema (schema only, no business data)..."
-& $npxCommand.Source @arguments
+$outputFileName = [System.IO.Path]::GetFileName($OutputPath)
+$previousSnapshotFile = $env:SUPABASE_SNAPSHOT_FILE
+$env:SUPABASE_SNAPSHOT_FILE = $outputFileName
+
+try {
+  & docker run --rm `
+    --env SUPABASE_DB_URL `
+    --env SUPABASE_SNAPSHOT_FILE `
+    --volume "${outputDirectory}:/output" `
+    $PostgresImage `
+    sh -c 'pg_dump --dbname="$SUPABASE_DB_URL" --schema-only --schema=public --no-owner --file="/output/$SUPABASE_SNAPSHOT_FILE"'
+}
+finally {
+  if ($null -eq $previousSnapshotFile) {
+    Remove-Item Env:SUPABASE_SNAPSHOT_FILE -ErrorAction SilentlyContinue
+  }
+  else {
+    $env:SUPABASE_SNAPSHOT_FILE = $previousSnapshotFile
+  }
+}
 
 if ($LASTEXITCODE -ne 0) {
   if (Test-Path -LiteralPath $OutputPath) {

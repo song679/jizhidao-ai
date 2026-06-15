@@ -2,7 +2,7 @@
 
 本目录用于保存生产数据库 `public` schema 的**纯结构快照**，不保存任何业务数据。
 
-Supabase CLI 的 `db dump` 会在容器中运行 `pg_dump`，执行前需要安装并启动 [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/)。
+项目脚本使用 Docker 官方 PostgreSQL 镜像运行 `pg_dump`，不依赖本机 PostgreSQL 或 Supabase CLI。执行前需要安装并启动 [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/)。
 
 先验证 Docker：
 
@@ -24,15 +24,9 @@ npm run db:schema:export
 Remove-Item Env:SUPABASE_DB_URL
 ```
 
-也可以先通过 Supabase CLI 登录并连接项目，然后运行：
-
-```powershell
-.\scripts\Export-SupabaseSchema.ps1 -Linked
-```
-
 脚本会：
 
-1. 使用 Supabase CLI 导出 `public` schema。
+1. 使用 Docker 官方 PostgreSQL 17 镜像导出 `public` schema。
 2. 不使用 `--data-only`，因此不会导出用户、聊天或订单数据。
 3. 检测并拒绝包含 `COPY public.*` 或 `INSERT INTO public.*` 的文件。
 4. 检测常见 API 密钥格式。
@@ -52,4 +46,4 @@ Remove-Item Env:SUPABASE_DB_URL
 
 项目早期四张基础表的原始建表 SQL 没有进入 Git。生成完整快照后，才能在现有生产项目损坏时准确恢复结构，而不是根据代码猜测表定义。
 
-参考：[Supabase CLI `db dump` 官方文档](https://supabase.com/docs/reference/cli/supabase-db-dump)
+参考：[PostgreSQL `pg_dump` 官方文档](https://www.postgresql.org/docs/current/app-pgdump.html)

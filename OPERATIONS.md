@@ -79,7 +79,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke
 
 ### 结构快照
 
-项目仓库提供 `scripts/Export-SupabaseSchema.ps1`，用于导出不含业务数据的 `public` schema：
+项目仓库提供 `scripts/Export-SupabaseSchema.ps1`，通过 Docker 官方 PostgreSQL 镜像导出不含业务数据的 `public` schema：
 
 ```powershell
 $dockerVersion = docker version
