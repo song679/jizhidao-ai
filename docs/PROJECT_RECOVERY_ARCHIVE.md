@@ -159,6 +159,7 @@ AI 至少配置一个服务商：
 - `NEXT_PUBLIC_SITE_NOTICE`、`NEXT_PUBLIC_SITE_NOTICE_LEVEL`、`NEXT_PUBLIC_SITE_NOTICE_URL` 用于发布无需改代码的全站公告。
 - `RESEND_API_KEY` 与 `NOTIFICATION_FROM_EMAIL` 为可选订单邮件配置；未配置时不影响订单主流程。
 - 2026-06-15 已完成 `mail.jizhidao-ai.com` 的 Resend DNS 验证及生产邮件验收；管理员和普通用户均成功收到订单邮件。
+- 2026-06-15 已生成 `supabase/schema-snapshots/public-schema-20260615-155930.sql`；该文件仅含生产 `public` schema，安全扫描和 SHA256 校验均已通过。
 
 ## 七、登录恢复
 
@@ -227,7 +228,7 @@ https://www.jizhidao-ai.com/**
 1. 由管理员运行 `npm run db:schema:export`，从生产 Supabase 生成并人工审核 schema-only 快照。
 2. 使用普通新邮箱验收“注册 → 创建订单 → 管理员确认 → 点数到账 → 流水出现”。
 3. 接入正式在线支付和签名回调。
-4. 建立定期数据库备份并记录恢复演练。
+4. 定期更新数据库结构快照，并补充加密业务数据备份与恢复演练。
 5. 继续性能、移动端和异常恢复测试。
 
 ## 十三、完整恢复验证
