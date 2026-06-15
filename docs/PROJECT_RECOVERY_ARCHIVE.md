@@ -158,6 +158,7 @@ AI 至少配置一个服务商：
 - 自定义域名故障时，可暂时改为 Vercel 默认生产域名，但必须同步加入 Supabase Authentication Redirect URLs 并重新发送登录邮件。
 - `NEXT_PUBLIC_SITE_NOTICE`、`NEXT_PUBLIC_SITE_NOTICE_LEVEL`、`NEXT_PUBLIC_SITE_NOTICE_URL` 用于发布无需改代码的全站公告。
 - `RESEND_API_KEY` 与 `NOTIFICATION_FROM_EMAIL` 为可选订单邮件配置；未配置时不影响订单主流程。
+- 2026-06-15 已完成 `mail.jizhidao-ai.com` 的 Resend DNS 验证及生产邮件验收；管理员和普通用户均成功收到订单邮件。
 
 ## 七、登录恢复
 
@@ -226,9 +227,8 @@ https://www.jizhidao-ai.com/**
 1. 由管理员运行 `npm run db:schema:export`，从生产 Supabase 生成并人工审核 schema-only 快照。
 2. 使用普通新邮箱验收“注册 → 创建订单 → 管理员确认 → 点数到账 → 流水出现”。
 3. 接入正式在线支付和签名回调。
-4. 增加订单邮件通知和管理员提醒。
-5. 建立定期数据库备份并记录恢复演练。
-6. 继续性能、移动端和异常恢复测试。
+4. 建立定期数据库备份并记录恢复演练。
+5. 继续性能、移动端和异常恢复测试。
 
 ## 十三、完整恢复验证
 
