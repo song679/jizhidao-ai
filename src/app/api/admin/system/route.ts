@@ -38,6 +38,7 @@ const requiredTables = [
   ["chat_messages", "聊天消息"],
   ["chat_request_ledger", "聊天计费账本"],
   ["recharge_orders", "充值订单"],
+  ["payment_webhook_events", "支付回调事件"],
 ] as const;
 
 const ORDER_EXPIRY_HOURS = Math.min(
@@ -90,19 +91,30 @@ export async function GET(request: Request) {
     })
   );
 
-  const { error: orderFunctionError } = await context.supabaseAdmin.rpc(
-    "complete_recharge_order",
-    {
-      p_order_id: "00000000-0000-4000-8000-000000000000",
-      p_admin_email: context.adminEmail,
-      p_payment_channel: "diagnostic",
-      p_payment_reference: null,
-      p_note: null,
-    }
-  );
+  const [{ error: orderFunctionError }, { error: paymentFunctionError }] =
+    await Promise.all([
+      context.supabaseAdmin.rpc("complete_recharge_order", {
+        p_order_id: "00000000-0000-4000-8000-000000000000",
+        p_admin_email: context.adminEmail,
+        p_payment_channel: "diagnostic",
+        p_payment_reference: null,
+        p_note: null,
+      }),
+      context.supabaseAdmin.rpc("complete_online_recharge_order", {
+        p_order_no: "",
+        p_provider: "",
+        p_provider_order_id: "",
+        p_provider_transaction_id: "",
+        p_amount_cents: 0,
+        p_event_id: "",
+      }),
+    ]);
   const orderFunctionMissing =
     orderFunctionError?.code === "PGRST202" ||
     orderFunctionError?.code === "42883";
+  const paymentFunctionMissing =
+    paymentFunctionError?.code === "PGRST202" ||
+    paymentFunctionError?.code === "42883";
   const checks: SystemCheck[] = [
     {
       id: "service:ai-provider",
@@ -129,6 +141,14 @@ export async function GET(request: Request) {
       detail: orderFunctionMissing
         ? "未安装，请执行充值订单迁移"
         : "已安装",
+    },
+    {
+      id: "function:complete_online_recharge_order",
+      label: "在线支付原子到账函数",
+      status: paymentFunctionMissing ? "error" : "ok",
+      detail: paymentFunctionMissing
+        ? "未安装，请执行 20260615_payment_webhook_safety.sql"
+        : "已安装，诊断调用不会写入支付事件",
     },
   ];
   const staleReservationCutoff = new Date(
