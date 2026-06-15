@@ -96,6 +96,8 @@ Windows 电脑需要先安装并启动 Docker Desktop。数据库连接 URI 从 
 
 生成文件位于 `supabase/schema-snapshots/`。提交前必须人工确认没有真实邮箱、聊天内容、订单或连接信息。
 
+结构快照会包含数据库函数源码，因此出现函数内部的 `INSERT INTO` 属于正常结构定义；脚本只会拦截 `COPY ... FROM stdin` 形式的真实数据块。
+
 ### Supabase 控制台备份
 
 - 付费方案优先使用 Supabase Dashboard 提供的数据库备份和时间点恢复功能。

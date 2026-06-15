@@ -211,10 +211,10 @@ if (-not (Test-Path -LiteralPath $OutputPath)) {
 
 $schemaText = Get-Content -LiteralPath $OutputPath -Raw -Encoding utf8
 
-$dataStatementPattern = "(?im)^\s*(COPY\s+public\.|INSERT\s+INTO\s+public\.)"
+$dataStatementPattern = '(?im)^\s*COPY\s+(?:"?public"?\.)?.+\s+FROM\s+stdin;\s*$'
 if ($schemaText -match $dataStatementPattern) {
   Remove-Item -LiteralPath $OutputPath -Force
-  Stop-WithMessage "Business data statements were detected. The export was removed."
+  Stop-WithMessage "A pg_dump data block was detected. The export was removed."
 }
 
 $secretPattern = "(?i)(sk-[a-z0-9_-]{12,}|sb_secret_[a-z0-9_-]{12,})"

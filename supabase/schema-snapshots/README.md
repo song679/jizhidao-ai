@@ -32,7 +32,7 @@ Remove-Variable securePassword,credential
 
 1. 使用 Docker 官方 PostgreSQL 17 镜像导出 `public` schema。
 2. 不使用 `--data-only`，因此不会导出用户、聊天或订单数据。
-3. 检测并拒绝包含 `COPY public.*` 或 `INSERT INTO public.*` 的文件。
+3. 检测并拒绝 `COPY ... FROM stdin` 数据块；函数定义内部合法的 `INSERT INTO` 不会被误判。
 4. 检测常见 API 密钥格式。
 5. 检查六张核心业务表是否存在。
 6. 生成 SHA256 校验文件。
