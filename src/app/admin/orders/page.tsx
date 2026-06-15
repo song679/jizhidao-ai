@@ -264,6 +264,12 @@ export default function AdminOrdersPage() {
               点数管理
             </Link>
             <Link
+              href="/admin/payments"
+              className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 hover:text-cyan-300"
+            >
+              支付监控
+            </Link>
+            <Link
               href="/chat"
               className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 hover:text-cyan-300"
             >

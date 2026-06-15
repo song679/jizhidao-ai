@@ -76,6 +76,7 @@
 - `/admin/recharge`：手动充值管理。
 - `/admin/transactions`：点数流水。
 - `/admin/orders`：充值订单管理。
+- `/admin/payments`：支付回调事件、验签和处理状态监控。
 - `/admin/system`：环境变量、数据库表和关键函数检查。
 - 系统状态页检查负数余额、滞留扣点和异常订单数据。
 - 可选联系方式未配置不会误报系统异常，并检查至少一个 AI 服务商可用。
@@ -154,6 +155,7 @@
 - `/api/admin/recharge`
 - `/api/admin/transactions`
 - `/api/admin/orders`
+- `/api/admin/payment-events`
 - `/api/admin/system`
 - `/api/account/export`
 - `/api/account/delete`
