@@ -18,10 +18,14 @@ docker version
 
 ```powershell
 # 在 Supabase 项目顶部点击 Connect，复制 Session pooler 连接字符串。
-# 把 [YOUR-PASSWORD] 替换为数据库密码；不要把连接字符串发到聊天或提交 GitHub。
-$env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
+# 保留连接字符串中的 [YOUR-PASSWORD]，密码单独输入，避免特殊字符破坏 URI。
+$env:SUPABASE_DB_URL='从 Supabase 控制台复制的 Session pooler 连接 URI'
+$securePassword = Read-Host "输入数据库密码" -AsSecureString
+$credential = [pscredential]::new("db", $securePassword)
+$env:SUPABASE_DB_PASSWORD = $credential.GetNetworkCredential().Password
 npm run db:schema:export
-Remove-Item Env:SUPABASE_DB_URL
+Remove-Item Env:SUPABASE_DB_URL,Env:SUPABASE_DB_PASSWORD
+Remove-Variable securePassword,credential
 ```
 
 脚本会：

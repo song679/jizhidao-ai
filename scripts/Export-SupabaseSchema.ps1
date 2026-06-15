@@ -115,15 +115,29 @@ Assert-DockerReady
 if ([string]::IsNullOrWhiteSpace($env:SUPABASE_DB_URL)) {
   Stop-WithMessage @"
 SUPABASE_DB_URL is not set.
-Copy the database connection URI from Supabase and set it only for this PowerShell session:
-`$env:SUPABASE_DB_URL='postgresql://...'
+Copy the Session pooler connection URI from Supabase and keep the
+[YOUR-PASSWORD] placeholder. Set it only for this PowerShell session:
+`$env:SUPABASE_DB_URL='postgresql://...:[YOUR-PASSWORD]@...'
+Set the password separately:
+`$env:SUPABASE_DB_PASSWORD='...'
 Then run: npm run db:schema:export
 "@
 }
 
+$databaseUrl = $env:SUPABASE_DB_URL.Trim()
+$databasePassword = $env:SUPABASE_DB_PASSWORD
+
+if ($databaseUrl.Contains("[YOUR-PASSWORD]")) {
+  if ([string]::IsNullOrWhiteSpace($databasePassword)) {
+    Stop-WithMessage "SUPABASE_DB_PASSWORD is not set. Keep [YOUR-PASSWORD] in the connection URI and provide the password separately."
+  }
+
+  $databaseUrl = $databaseUrl.Replace(":[YOUR-PASSWORD]@", "@")
+}
+
 $databaseUri = $null
 if (-not [System.Uri]::TryCreate(
-  $env:SUPABASE_DB_URL,
+  $databaseUrl,
   [System.UriKind]::Absolute,
   [ref]$databaseUri
 )) {
@@ -134,12 +148,8 @@ if ($databaseUri.Scheme -notin @("postgres", "postgresql")) {
   Stop-WithMessage "SUPABASE_DB_URL must start with postgres:// or postgresql://."
 }
 
-if (
-  $env:SUPABASE_DB_URL.Contains("[YOUR-PASSWORD]") -or
-  [string]::IsNullOrWhiteSpace($databaseUri.UserInfo) -or
-  $databaseUri.UserInfo -notmatch ":"
-) {
-  Stop-WithMessage "The database password placeholder has not been replaced."
+if ([string]::IsNullOrWhiteSpace($databaseUri.UserInfo)) {
+  Stop-WithMessage "The database connection URI does not contain a username."
 }
 
 if (-not [string]::IsNullOrWhiteSpace($databaseUri.Fragment)) {
@@ -149,17 +159,21 @@ if (-not [string]::IsNullOrWhiteSpace($databaseUri.Fragment)) {
 Write-Host "Exporting the public schema (schema only, no business data)..."
 $outputFileName = [System.IO.Path]::GetFileName($OutputPath)
 $previousSnapshotFile = $env:SUPABASE_SNAPSHOT_FILE
+$previousDatabaseUrl = $env:SUPABASE_DB_URL_RUNTIME
 $env:SUPABASE_SNAPSHOT_FILE = $outputFileName
+$env:SUPABASE_DB_URL_RUNTIME = $databaseUrl
 
 try {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   $dockerOutput = & docker run --rm `
       --env SUPABASE_DB_URL `
+      --env SUPABASE_DB_URL_RUNTIME `
+      --env SUPABASE_DB_PASSWORD `
       --env SUPABASE_SNAPSHOT_FILE `
       --volume "${outputDirectory}:/output" `
       $PostgresImage `
-      sh -c 'pg_dump --dbname="$SUPABASE_DB_URL" --schema-only --schema=public --no-owner --file="/output/$SUPABASE_SNAPSHOT_FILE"' 2>&1 |
+      sh -c 'PGPASSWORD="$SUPABASE_DB_PASSWORD" pg_dump --dbname="$SUPABASE_DB_URL_RUNTIME" --schema-only --schema=public --no-owner --file="/output/$SUPABASE_SNAPSHOT_FILE"' 2>&1 |
     ForEach-Object { $_.ToString() }
   $dockerExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
@@ -172,6 +186,13 @@ finally {
   else {
     $env:SUPABASE_SNAPSHOT_FILE = $previousSnapshotFile
   }
+
+  if ($null -eq $previousDatabaseUrl) {
+    Remove-Item Env:SUPABASE_DB_URL_RUNTIME -ErrorAction SilentlyContinue
+  }
+  else {
+    $env:SUPABASE_DB_URL_RUNTIME = $previousDatabaseUrl
+  }
 }
 
 if ($dockerExitCode -ne 0) {
@@ -180,7 +201,7 @@ if ($dockerExitCode -ne 0) {
   }
   $safeError = Get-SafeDatabaseError `
     -Output ($dockerOutput -join "`n") `
-    -ConnectionString $env:SUPABASE_DB_URL
+    -ConnectionString $databaseUrl
   Stop-WithMessage "$safeError`nThe incomplete file was removed."
 }
 

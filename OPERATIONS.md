@@ -84,11 +84,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke
 ```powershell
 $dockerVersion = docker version
 $env:SUPABASE_DB_URL='从 Supabase 控制台复制的数据库连接 URI'
+$securePassword = Read-Host "输入数据库密码" -AsSecureString
+$credential = [pscredential]::new("db", $securePassword)
+$env:SUPABASE_DB_PASSWORD = $credential.GetNetworkCredential().Password
 npm run db:schema:export
-Remove-Item Env:SUPABASE_DB_URL
+Remove-Item Env:SUPABASE_DB_URL,Env:SUPABASE_DB_PASSWORD
+Remove-Variable securePassword,credential
 ```
 
-Windows 电脑需要先安装并启动 Docker Desktop。数据库连接 URI 从 Supabase 项目顶部的 **Connect → Session pooler** 复制，并将占位密码替换为数据库密码。连接 URI 属于敏感信息，不要粘贴到聊天、截图或提交 GitHub。
+Windows 电脑需要先安装并启动 Docker Desktop。数据库连接 URI 从 Supabase 项目顶部的 **Connect → Session pooler** 复制，保留其中的 `[YOUR-PASSWORD]` 占位符，密码通过独立临时环境变量传入。连接 URI 和密码都属于敏感信息，不要粘贴到聊天、截图或提交 GitHub。
 
 生成文件位于 `supabase/schema-snapshots/`。提交前必须人工确认没有真实邮箱、聊天内容、订单或连接信息。
 
