@@ -42,6 +42,7 @@ export async function GET(request: Request) {
     const todayIso = todayStart.toISOString();
     const sevenDayIso = sevenDayStart.toISOString();
     const staleReservationIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const stalePaymentIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const orderExpiryHours = Math.min(
       168,
       Math.max(
@@ -61,6 +62,9 @@ export async function GET(request: Request) {
       todayLedgerResult,
       staleReservationsResult,
       pendingOrdersResult,
+      stalePaymentEventsResult,
+      failedPaymentEventsResult,
+      mismatchedPaymentEventsResult,
     ] = await Promise.all([
       adminContext.supabaseAdmin
         .from("user_points")
@@ -97,6 +101,22 @@ export async function GET(request: Request) {
         .select("id", { count: "exact", head: true })
         .eq("status", "pending")
         .gte("created_at", activeOrderCutoffIso),
+      adminContext.supabaseAdmin
+        .from("payment_webhook_events")
+        .select("id", { count: "exact", head: true })
+        .eq("processing_status", "received")
+        .lt("received_at", stalePaymentIso),
+      adminContext.supabaseAdmin
+        .from("payment_webhook_events")
+        .select("id", { count: "exact", head: true })
+        .eq("processing_status", "failed")
+        .gte("received_at", todayIso),
+      adminContext.supabaseAdmin
+        .from("payment_webhook_events")
+        .select("id", { count: "exact", head: true })
+        .eq("processing_status", "ignored")
+        .eq("error_code", "amount_mismatch")
+        .gte("received_at", todayIso),
     ]);
 
     const queryError = [
@@ -107,6 +127,9 @@ export async function GET(request: Request) {
       todayLedgerResult.error,
       staleReservationsResult.error,
       pendingOrdersResult.error,
+      stalePaymentEventsResult.error,
+      failedPaymentEventsResult.error,
+      mismatchedPaymentEventsResult.error,
     ].find(Boolean);
 
     if (queryError) {
@@ -154,6 +177,15 @@ export async function GET(request: Request) {
         : null,
       refundRate >= 20 && finalizedToday >= 5
         ? `今日退款率偏高：${refundRate}%`
+        : null,
+      (stalePaymentEventsResult.count || 0) > 0
+        ? `存在 ${stalePaymentEventsResult.count} 个超过 10 分钟未处理的支付回调`
+        : null,
+      (failedPaymentEventsResult.count || 0) > 0
+        ? `今日有 ${failedPaymentEventsResult.count} 个支付回调处理失败`
+        : null,
+      (mismatchedPaymentEventsResult.count || 0) > 0
+        ? `今日有 ${mismatchedPaymentEventsResult.count} 个支付金额不匹配事件`
         : null,
     ].filter((item): item is string => Boolean(item));
 
@@ -212,6 +244,10 @@ export async function GET(request: Request) {
         todayPointsUsed,
         todayRecharged,
         pendingOrders: pendingOrdersResult.count || 0,
+        paymentAlerts:
+          (stalePaymentEventsResult.count || 0) +
+          (failedPaymentEventsResult.count || 0) +
+          (mismatchedPaymentEventsResult.count || 0),
       },
       daily: Array.from(dailyMap.values()),
       models: Array.from(modelMap.values()).sort(
@@ -222,6 +258,9 @@ export async function GET(request: Request) {
         status: healthIssues.length === 0 ? "healthy" : "warning",
         issues: healthIssues,
         staleReservations: staleReservationsResult.count || 0,
+        stalePaymentEvents: stalePaymentEventsResult.count || 0,
+        failedPaymentEvents: failedPaymentEventsResult.count || 0,
+        mismatchedPaymentEvents: mismatchedPaymentEventsResult.count || 0,
         reservedToday,
         completedToday: completedLedgerToday,
         refundedToday: refundedLedgerToday,

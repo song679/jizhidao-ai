@@ -15,6 +15,7 @@ type DashboardData = {
     todayPointsUsed: number;
     todayRecharged: number;
     pendingOrders: number;
+    paymentAlerts: number;
   };
   daily: Array<{
     date: string;
@@ -40,6 +41,9 @@ type DashboardData = {
     status: "healthy" | "warning";
     issues: string[];
     staleReservations: number;
+    stalePaymentEvents: number;
+    failedPaymentEvents: number;
+    mismatchedPaymentEvents: number;
     reservedToday: number;
     completedToday: number;
     refundedToday: number;
@@ -170,9 +174,14 @@ export default function AdminDashboardPage() {
             </Link>
             <Link
               href="/admin/payments"
-              className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
+              className="flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300"
             >
               支付监控
+              {(data?.metrics.paymentAlerts || 0) > 0 && (
+                <span className="rounded-full bg-rose-300 px-2 py-0.5 text-xs font-bold text-slate-950">
+                  {data?.metrics.paymentAlerts}
+                </span>
+              )}
             </Link>
             <Link
               href="/chat"
@@ -245,6 +254,9 @@ export default function AdminDashboardPage() {
                 <p className="mt-1">
                   滞留请求 {data.health.staleReservations} 个
                 </p>
+                <p className="mt-1">
+                  支付异常 {data.metrics.paymentAlerts} 个
+                </p>
               </div>
             </div>
 
@@ -267,6 +279,18 @@ export default function AdminDashboardPage() {
               有 {data?.metrics.pendingOrders} 个充值订单等待确认
             </span>
             <span className="text-sm">立即处理 →</span>
+          </Link>
+        )}
+
+        {(data?.metrics.paymentAlerts || 0) > 0 && (
+          <Link
+            href="/admin/payments"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rose-400/30 bg-rose-400/10 px-5 py-4 text-rose-100 transition hover:border-rose-300/60"
+          >
+            <span className="font-semibold">
+              有 {data?.metrics.paymentAlerts} 个支付回调异常需要检查
+            </span>
+            <span className="text-sm">查看支付监控 →</span>
           </Link>
         )}
 

@@ -11,6 +11,19 @@ type SystemCheck = {
   detail: string;
 };
 
+const CHINA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+function getChinaDayStart() {
+  const shiftedNow = new Date(Date.now() + CHINA_OFFSET_MS);
+  const utcMidnight = Date.UTC(
+    shiftedNow.getUTCFullYear(),
+    shiftedNow.getUTCMonth(),
+    shiftedNow.getUTCDate()
+  );
+
+  return new Date(utcMidnight - CHINA_OFFSET_MS);
+}
+
 const requiredEnvironmentVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
@@ -157,11 +170,15 @@ export async function GET(request: Request) {
   const expiredOrderCutoff = new Date(
     Date.now() - ORDER_EXPIRY_HOURS * 60 * 60 * 1000
   ).toISOString();
+  const todayCutoff = getChinaDayStart();
   const [
     negativeBalancesResult,
     staleReservationsResult,
     expiredOrdersResult,
     incompletePaidOrdersResult,
+    stalePaymentEventsResult,
+    failedPaymentEventsResult,
+    mismatchedPaymentEventsResult,
   ] = await Promise.all([
     context.supabaseAdmin
       .from("user_points")
@@ -182,6 +199,22 @@ export async function GET(request: Request) {
       .select("id", { count: "exact", head: true })
       .eq("status", "paid")
       .is("paid_at", null),
+    context.supabaseAdmin
+      .from("payment_webhook_events")
+      .select("id", { count: "exact", head: true })
+      .eq("processing_status", "received")
+      .lt("received_at", staleReservationCutoff),
+    context.supabaseAdmin
+      .from("payment_webhook_events")
+      .select("id", { count: "exact", head: true })
+      .eq("processing_status", "failed")
+      .gte("received_at", todayCutoff.toISOString()),
+    context.supabaseAdmin
+      .from("payment_webhook_events")
+      .select("id", { count: "exact", head: true })
+      .eq("processing_status", "ignored")
+      .eq("error_code", "amount_mismatch")
+      .gte("received_at", todayCutoff.toISOString()),
   ]);
   const integrityChecks: SystemCheck[] = [
     {
@@ -239,6 +272,48 @@ export async function GET(request: Request) {
         : (incompletePaidOrdersResult.count || 0) > 0
           ? `发现 ${incompletePaidOrdersResult.count} 个缺少到账时间的已支付订单`
           : "已支付订单记录完整",
+    },
+    {
+      id: "integrity:stale-payment-events",
+      label: "滞留支付回调",
+      status: stalePaymentEventsResult.error
+        ? "error"
+        : (stalePaymentEventsResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: stalePaymentEventsResult.error
+        ? "检查失败"
+        : (stalePaymentEventsResult.count || 0) > 0
+          ? `发现 ${stalePaymentEventsResult.count} 个超过 10 分钟未处理的支付回调`
+          : "未发现滞留支付回调",
+    },
+    {
+      id: "integrity:failed-payment-events",
+      label: "支付回调处理失败",
+      status: failedPaymentEventsResult.error
+        ? "error"
+        : (failedPaymentEventsResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: failedPaymentEventsResult.error
+        ? "检查失败"
+        : (failedPaymentEventsResult.count || 0) > 0
+          ? `今日发现 ${failedPaymentEventsResult.count} 个处理失败事件`
+          : "今日未发现处理失败事件",
+    },
+    {
+      id: "integrity:mismatched-payment-events",
+      label: "支付金额一致性",
+      status: mismatchedPaymentEventsResult.error
+        ? "error"
+        : (mismatchedPaymentEventsResult.count || 0) > 0
+          ? "warning"
+          : "ok",
+      detail: mismatchedPaymentEventsResult.error
+        ? "检查失败"
+        : (mismatchedPaymentEventsResult.count || 0) > 0
+          ? `今日发现 ${mismatchedPaymentEventsResult.count} 个金额不匹配事件`
+          : "今日支付金额校验正常",
     },
   ];
   const missingRequiredEnvironment = environment.filter(
