@@ -61,3 +61,8 @@ Copy-Item .env.example .env.local
 - 使用 `npm run db:schema:export` 可安全生成不含业务数据的结构快照。
 - 2026-06-14 检测到生产域名 DNS 为 NXDOMAIN，恢复前查看 `docs/INCIDENT_LOG.md`。
 - GitHub Actions 每天北京时间 09:15 自动运行生产冒烟检查。
+
+
+## Latest recovery addendum
+
+- Read `docs/RECENT_PROGRESS_20260616.md` after this index to recover the latest payment, export, dynamic API, and CI progress.
