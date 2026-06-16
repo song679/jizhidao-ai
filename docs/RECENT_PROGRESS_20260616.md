@@ -78,6 +78,13 @@ environment variables, or admin authorization. They should not be statically opt
 - This prepares the project for a future real payment provider without changing
   the current manual recharge flow.
 
+### Payment contract regression test
+
+- Added `scripts/Test-PaymentContract.mjs`.
+- Added `npm.cmd run test:payment-contract`.
+- GitHub Actions now verifies the payment helper behavior before lint and
+  schema checks.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -99,6 +106,7 @@ Run these before pushing:
 
 ```powershell
 npm.cmd run typecheck
+npm.cmd run test:payment-contract
 npm.cmd run lint
 npm.cmd run db:schema:validate
 git diff --check
