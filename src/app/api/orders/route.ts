@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { notifyOrderCreated } from "@/lib/order-notifications";
 import { getRechargePlan } from "@/lib/recharge-plans";
 
+export const dynamic = "force-dynamic";
+
 function getOrderNumber() {
   const timestamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
   const random = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
