@@ -62,6 +62,7 @@ export default function AdminPaymentsPage() {
   const [total, setTotal] = useState(0);
   const [ready, setReady] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -151,6 +152,61 @@ export default function AdminPaymentsPage() {
     void loadEvents(status, 1, nextSearch);
   }
 
+  async function exportEvents() {
+    setExporting(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.assign("/login");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        status,
+        format: "csv",
+      });
+
+      if (search) params.set("search", search);
+
+      const response = await fetch(
+        `/api/admin/payment-events?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || "导出支付回调事件失败");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `payment-events-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "导出支付回调事件失败"
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
@@ -194,14 +250,24 @@ export default function AdminPaymentsPage() {
               查看支付平台回调的验签、去重与到账处理结果，不展示原始支付报文。
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadEvents()}
-            disabled={loading}
-            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 disabled:opacity-50"
-          >
-            {loading ? "刷新中…" : "刷新数据"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void exportEvents()}
+              disabled={exporting || !ready}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 disabled:opacity-50"
+            >
+              {exporting ? "导出中…" : "导出 CSV"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadEvents()}
+              disabled={loading}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 disabled:opacity-50"
+            >
+              {loading ? "刷新中…" : "刷新数据"}
+            </button>
+          </div>
         </section>
 
         {!ready && (
@@ -410,4 +476,3 @@ export default function AdminPaymentsPage() {
     </main>
   );
 }
-
