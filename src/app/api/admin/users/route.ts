@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 50;
 
 function normalizeSearch(value: string | null) {

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 const allowedStatuses = new Set([
   "received",
   "processed",

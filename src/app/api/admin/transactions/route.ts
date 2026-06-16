@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
 import { parsePointDescription } from "@/lib/point-description";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 50;
 const EXPORT_LIMIT = 10_000;
 const ALLOWED_TYPES = new Set([

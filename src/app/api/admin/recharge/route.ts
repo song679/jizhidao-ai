@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
 import { createAdminPointDescription } from "@/lib/point-description";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const adminContext = await authorizeAdmin(request);

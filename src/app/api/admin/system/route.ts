@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { authorizeAdmin } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 type CheckStatus = "ok" | "warning" | "error";
 
 type SystemCheck = {

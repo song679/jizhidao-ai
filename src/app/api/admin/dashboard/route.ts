@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { authorizeAdmin } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 const CHINA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 function getChinaDayStart(daysAgo = 0) {

@@ -5,6 +5,8 @@ import {
   notifyOrderPaid,
 } from "@/lib/order-notifications";
 
+export const dynamic = "force-dynamic";
+
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
