@@ -239,6 +239,42 @@ catch {
   Add-Result $results "AI model config" $false $_.Exception.Message
 }
 
+try {
+  $paymentStatusResponse = Invoke-WebRequest `
+    -Uri "$BaseUrl/api/payments/status" `
+    -UseBasicParsing `
+    -TimeoutSec $TimeoutSec `
+    -Headers @{ "User-Agent" = "Jizhidao-Smoke-Test/1.0" }
+
+  $paymentStatus = $paymentStatusResponse.Content | ConvertFrom-Json
+  $paymentStatusPassed =
+    [int]$paymentStatusResponse.StatusCode -eq 200 -and
+    $null -ne $paymentStatus.mode -and
+    $null -ne $paymentStatus.manualRechargeEnabled -and
+    $null -ne $paymentStatus.onlinePaymentEnabled -and
+    $null -ne $paymentStatus.provider -and
+    $null -ne $paymentStatus.adapterImplemented -and
+    $null -ne $paymentStatus.warnings
+  $paymentCacheControl = Get-HeaderValue `
+    $paymentStatusResponse.Headers `
+    "Cache-Control"
+
+  Add-Result `
+    $results `
+    "Payment runtime status" `
+    $paymentStatusPassed `
+    "mode=$($paymentStatus.mode); provider=$($paymentStatus.provider); online=$($paymentStatus.onlinePaymentEnabled)"
+
+  Add-Result `
+    $results `
+    "Payment status no-store" `
+    ($paymentCacheControl -match "no-store") `
+    "Cache-Control: $paymentCacheControl"
+}
+catch {
+  Add-Result $results "Payment runtime status" $false $_.Exception.Message
+}
+
 if ($responses.ContainsKey("/")) {
   $homeResponse = $responses["/"]
   $requiredHeaders = @{

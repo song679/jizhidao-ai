@@ -85,6 +85,15 @@ environment variables, or admin authorization. They should not be statically opt
 - GitHub Actions now verifies the payment helper behavior before lint and
   schema checks.
 
+### Payment runtime status endpoint
+
+- Added public non-secret status endpoint: `/api/payments/status`.
+- The endpoint reports whether the site is in manual or online payment mode.
+- It currently keeps online payment disabled until a real provider adapter is
+  implemented, even if an environment variable is accidentally set.
+- Production smoke checks now verify the endpoint shape and `no-store` cache
+  behavior.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
