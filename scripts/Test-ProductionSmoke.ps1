@@ -198,8 +198,49 @@ catch {
   Add-Result $results "API health" $false $_.Exception.Message
 }
 
+try {
+  $modelConfigResponse = Invoke-WebRequest `
+    -Uri "$BaseUrl/api/chat/config" `
+    -UseBasicParsing `
+    -TimeoutSec $TimeoutSec `
+    -Headers @{ "User-Agent" = "Jizhidao-Smoke-Test/1.0" }
+
+  $modelConfig = $modelConfigResponse.Content | ConvertFrom-Json
+  $models = @($modelConfig.models)
+  $hasSelectedModel =
+    [int]$modelConfigResponse.StatusCode -eq 200 -and
+    -not [string]::IsNullOrWhiteSpace([string]$modelConfig.provider) -and
+    -not [string]::IsNullOrWhiteSpace([string]$modelConfig.model) -and
+    -not [string]::IsNullOrWhiteSpace([string]$modelConfig.modelId)
+  $hasModelOptions =
+    $models.Count -gt 0 -and
+    @($models | Where-Object {
+      -not [string]::IsNullOrWhiteSpace([string]$_.id) -and
+      -not [string]::IsNullOrWhiteSpace([string]$_.provider) -and
+      -not [string]::IsNullOrWhiteSpace([string]$_.model) -and
+      -not [string]::IsNullOrWhiteSpace([string]$_.displayName) -and
+      -not [string]::IsNullOrWhiteSpace([string]$_.label) -and
+      [int]$_.pointCost -gt 0
+    }).Count -eq $models.Count
+
+  Add-Result `
+    $results `
+    "AI model config selected" `
+    $hasSelectedModel `
+    "provider=$($modelConfig.provider); model=$($modelConfig.model); modelId=$($modelConfig.modelId)"
+
+  Add-Result `
+    $results `
+    "AI model config options" `
+    $hasModelOptions `
+    "models=$($models.Count)"
+}
+catch {
+  Add-Result $results "AI model config" $false $_.Exception.Message
+}
+
 if ($responses.ContainsKey("/")) {
-  $home = $responses["/"]
+  $homeResponse = $responses["/"]
   $requiredHeaders = @{
     "Content-Security-Policy" = "default-src"
     "Strict-Transport-Security" = "max-age="
@@ -209,7 +250,7 @@ if ($responses.ContainsKey("/")) {
   }
 
   foreach ($headerName in $requiredHeaders.Keys) {
-    $headerValue = Get-HeaderValue $home.Headers $headerName
+    $headerValue = Get-HeaderValue $homeResponse.Headers $headerName
     $headerPassed = $headerValue -match [regex]::Escape($requiredHeaders[$headerName])
     Add-Result $results "Header $headerName" $headerPassed $headerValue
   }
