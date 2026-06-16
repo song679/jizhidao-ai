@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { authorizeAdmin } from "@/lib/admin-auth";
+import { getPaymentRuntimeStatus } from "@/lib/payments/status";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ const optionalEnvironmentVariables = [
   "NEXT_PUBLIC_SITE_NOTICE_URL",
   "RESEND_API_KEY",
   "NOTIFICATION_FROM_EMAIL",
+  "ONLINE_PAYMENTS_ENABLED",
+  "PAYMENT_PROVIDER",
 ] as const;
 
 const requiredTables = [
@@ -130,6 +133,7 @@ export async function GET(request: Request) {
   const paymentFunctionMissing =
     paymentFunctionError?.code === "PGRST202" ||
     paymentFunctionError?.code === "42883";
+  const paymentRuntimeStatus = getPaymentRuntimeStatus();
   const checks: SystemCheck[] = [
     {
       id: "service:ai-provider",
@@ -164,6 +168,20 @@ export async function GET(request: Request) {
       detail: paymentFunctionMissing
         ? "未安装，请执行 20260615_payment_webhook_safety.sql"
         : "已安装，诊断调用不会写入支付事件",
+    },
+    {
+      id: "service:payment-runtime",
+      label: "支付运行模式",
+      status:
+        paymentRuntimeStatus.warnings.length > 0 ? "warning" : "ok",
+      detail: [
+        `模式=${paymentRuntimeStatus.mode}`,
+        `渠道=${paymentRuntimeStatus.provider}`,
+        `在线支付=${paymentRuntimeStatus.onlinePaymentEnabled ? "已启用" : "未启用"}`,
+        paymentRuntimeStatus.warnings.length > 0
+          ? `提醒=${paymentRuntimeStatus.warnings.join(",")}`
+          : "提醒=无",
+      ].join("；"),
     },
   ];
   const staleReservationCutoff = new Date(

@@ -95,6 +95,8 @@ environment variables, or admin authorization. They should not be statically opt
   behavior.
 - Payment contract tests now also cover manual mode, invalid provider
   warnings, and the online-payment-requested-but-not-implemented guard.
+- Admin system diagnostics now include payment runtime mode, provider, online
+  payment status, and payment configuration warnings.
 
 ## Recent validated commits
 
