@@ -62,6 +62,22 @@ The following account-sensitive or admin-sensitive APIs are explicitly marked dy
 Reason: these endpoints depend on auth state, realtime account/order/point data,
 environment variables, or admin authorization. They should not be statically optimized.
 
+### Production smoke test hardening
+
+- The production smoke script now checks the public AI model configuration API.
+- It verifies that the selected model and model option list are present and
+  structurally valid.
+- Latest production smoke result: 42 checks passed.
+
+### Payment provider adapter boundary
+
+- Added a code-level provider adapter contract:
+  `src/lib/payments/contract.ts`
+- Added an implementation note:
+  `docs/PAYMENT_PROVIDER_ADAPTER_CONTRACT.md`
+- This prepares the project for a future real payment provider without changing
+  the current manual recharge flow.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -75,6 +91,7 @@ environment variables, or admin authorization. They should not be statically opt
 - `a771570` - mark user orders api dynamic
 - `be12ba5` - mark admin apis dynamic
 - `3b16895` - mark user apis dynamic
+- `ceb7e1d` - extend production model smoke checks
 
 ## Standard validation commands
 
@@ -96,6 +113,7 @@ npm.cmd run test:production
 ## Next recommended work
 
 1. Choose the first real payment provider and product flow.
-2. Implement provider-specific create-payment and signed-webhook adapters.
+2. Implement provider-specific create-payment and signed-webhook adapters using
+   `src/lib/payments/contract.ts`.
 3. Keep manual recharge as fallback until online payment has been verified end-to-end.
 4. Continue production smoke checks and schema snapshot validation after database changes.
