@@ -44,7 +44,9 @@ function chinaDateBoundary(value: string | null, endOfDay = false) {
 
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
-  return `"${text.replace(/"/g, '""')}"`;
+  const injectionSafeText = /^[=+\-@\t\r]/.test(text) ? `\t${text}` : text;
+
+  return `"${injectionSafeText.replace(/"/g, '""')}"`;
 }
 
 export async function GET(request: Request) {

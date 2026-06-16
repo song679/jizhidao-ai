@@ -76,6 +76,7 @@
 - `/admin/users`：用户管理。
 - `/admin/recharge`：手动充值管理。
 - `/admin/transactions`：点数流水。
+- 点数流水 CSV 导出已加入表格公式注入防护。
 - `/admin/orders`：充值订单管理。
 - `/admin/payments`：支付回调事件、验签和处理状态监控。
 - 充值订单支持按筛选条件导出 CSV，便于财务对账。
