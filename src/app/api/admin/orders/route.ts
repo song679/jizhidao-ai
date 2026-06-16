@@ -15,6 +15,9 @@ function isUuid(value: unknown): value is string {
 }
 
 const paymentChannels = new Set(["manual", "wechat", "alipay", "bank"]);
+const orderStatuses = new Set(["pending", "paid", "cancelled", "refunded"]);
+const orderFields =
+  "id, order_no, email, plan_name, amount_cents, points, status, payment_channel, payment_reference, admin_email, note, created_at, paid_at, updated_at";
 const ORDER_EXPIRY_HOURS = Math.min(
   168,
   Math.max(
@@ -22,6 +25,77 @@ const ORDER_EXPIRY_HOURS = Math.min(
     Number.parseInt(process.env.ORDER_EXPIRY_HOURS || "24", 10) || 24
   )
 );
+
+type RechargeOrderRow = {
+  id: string;
+  order_no: string;
+  email: string;
+  plan_name: string;
+  amount_cents: number;
+  points: number;
+  status: string;
+  payment_channel: string | null;
+  payment_reference: string | null;
+  admin_email: string | null;
+  note: string | null;
+  created_at: string;
+  paid_at: string | null;
+  updated_at: string;
+};
+
+function sanitizeSearch(value: string | null) {
+  return (value || "")
+    .trim()
+    .slice(0, 100)
+    .replace(/[^\p{L}\p{N}@._+-]/gu, "");
+}
+
+function escapeCsvCell(value: unknown) {
+  const text =
+    value === null || typeof value === "undefined" ? "" : String(value);
+  const injectionSafeText = /^[=+\-@\t\r]/.test(text) ? `\t${text}` : text;
+
+  return `"${injectionSafeText.replace(/"/g, '""')}"`;
+}
+
+function buildOrdersCsv(orders: RechargeOrderRow[]) {
+  const headers = [
+    "order_no",
+    "email",
+    "plan_name",
+    "amount_yuan",
+    "amount_cents",
+    "points",
+    "status",
+    "payment_channel",
+    "payment_reference",
+    "admin_email",
+    "note",
+    "created_at",
+    "paid_at",
+    "updated_at",
+  ];
+  const rows = orders.map((order) => [
+    order.order_no,
+    order.email,
+    order.plan_name,
+    (order.amount_cents / 100).toFixed(2),
+    order.amount_cents,
+    order.points,
+    order.status,
+    order.payment_channel,
+    order.payment_reference,
+    order.admin_email,
+    order.note,
+    order.created_at,
+    order.paid_at,
+    order.updated_at,
+  ]);
+
+  return [headers, ...rows]
+    .map((row) => row.map(escapeCsvCell).join(","))
+    .join("\r\n");
+}
 
 function getOrderExpiryCutoff() {
   return new Date(
@@ -69,6 +143,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "all";
+  const format = searchParams.get("format") || "json";
   const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
   const pageSize = Math.min(
     50,
@@ -77,22 +152,64 @@ export async function GET(request: Request) {
       Number.parseInt(searchParams.get("pageSize") || "20", 10) || 20
     )
   );
-  const search = (searchParams.get("search") || "")
-    .trim()
-    .slice(0, 100)
-    .replace(/[^\p{L}\p{N}@._+-]/gu, "");
+  const search = sanitizeSearch(searchParams.get("search"));
   const rangeStart = (page - 1) * pageSize;
   const rangeEnd = rangeStart + pageSize - 1;
+
+  if (format === "csv") {
+    let exportQuery = context.supabaseAdmin
+      .from("recharge_orders")
+      .select(orderFields)
+      .order("created_at", { ascending: false })
+      .limit(5000);
+
+    if (orderStatuses.has(status)) {
+      exportQuery = exportQuery.eq("status", status);
+    }
+
+    if (search) {
+      exportQuery = exportQuery.or(
+        `order_no.ilike.%${search}%,email.ilike.%${search}%`
+      );
+    }
+
+    const { data: orders, error } = await exportQuery;
+
+    if (error?.code === "42P01" || error?.code === "PGRST205") {
+      return NextResponse.json(
+        { error: "Recharge orders database is not initialized" },
+        { status: 503 }
+      );
+    }
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Export recharge orders failed" },
+        { status: 500 }
+      );
+    }
+
+    const csv = buildOrdersCsv((orders || []) as RechargeOrderRow[]);
+    const filename = `recharge-orders-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+    return new NextResponse(`\uFEFF${csv}`, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   let query = context.supabaseAdmin
     .from("recharge_orders")
-    .select(
-      "id, order_no, email, plan_name, amount_cents, points, status, payment_channel, payment_reference, admin_email, note, created_at, paid_at, updated_at",
-      { count: "exact" }
-    )
+    .select(orderFields, { count: "exact" })
     .order("created_at", { ascending: false })
     .range(rangeStart, rangeEnd);
 
-  if (["pending", "paid", "cancelled", "refunded"].includes(status)) {
+  if (orderStatuses.has(status)) {
     query = query.eq("status", status);
   }
 

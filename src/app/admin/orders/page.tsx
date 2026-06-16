@@ -72,6 +72,7 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [ready, setReady] = useState(true);
@@ -231,6 +232,58 @@ export default function AdminOrdersPage() {
     }
   }
 
+  async function exportOrders() {
+    setExporting(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.assign("/login");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        status,
+        format: "csv",
+      });
+
+      if (search) {
+        params.set("search", search);
+      }
+
+      const response = await fetch(`/api/admin/orders?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || "Export recharge orders failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `recharge-orders-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Export recharge orders failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function openPaymentDialog(order: Order) {
     setPaymentOrder(order);
     setPaymentChannel("wechat");
@@ -368,14 +421,24 @@ export default function AdminOrdersPage() {
             {search ? `，搜索“${search}”` : ""}
             {!loading ? " · 每 30 秒自动刷新" : ""}
           </span>
-          <button
-            type="button"
-            onClick={() => loadOrders(status, page, search)}
-            disabled={loading}
-            className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 disabled:opacity-50"
-          >
-            刷新
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => exportOrders()}
+              disabled={exporting || !ready}
+              className="rounded-lg border border-cyan-400/40 px-4 py-2 text-cyan-200 disabled:opacity-50"
+            >
+              {exporting ? "导出中…" : "导出 CSV"}
+            </button>
+            <button
+              type="button"
+              onClick={() => loadOrders(status, page, search)}
+              disabled={loading}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-slate-300 disabled:opacity-50"
+            >
+              刷新
+            </button>
+          </div>
         </div>
 
         <section className="mt-6 space-y-4 md:hidden">
