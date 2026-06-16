@@ -93,6 +93,8 @@ environment variables, or admin authorization. They should not be statically opt
   implemented, even if an environment variable is accidentally set.
 - Production smoke checks now verify the endpoint shape and `no-store` cache
   behavior.
+- Payment contract tests now also cover manual mode, invalid provider
+  warnings, and the online-payment-requested-but-not-implemented guard.
 
 ## Recent validated commits
 
