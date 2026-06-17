@@ -67,7 +67,7 @@ environment variables, or admin authorization. They should not be statically opt
 - The production smoke script now checks the public AI model configuration API.
 - It verifies that the selected model and model option list are present and
   structurally valid.
-- Latest production smoke result: 42 checks passed.
+- Latest production smoke result: 44 checks passed.
 
 ### Payment provider adapter boundary
 
@@ -112,6 +112,11 @@ environment variables, or admin authorization. They should not be statically opt
 - `be12ba5` - mark admin apis dynamic
 - `3b16895` - mark user apis dynamic
 - `ceb7e1d` - extend production model smoke checks
+- `7635a10` - add payment provider adapter contract
+- `bee595c` - test payment contract helpers
+- `6a952d1` - expose payment runtime status
+- `0b52382` - cover payment runtime status safeguards
+- `6b9d00d` - show payment runtime in system diagnostics
 
 ## Standard validation commands
 
