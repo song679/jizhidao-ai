@@ -35,6 +35,7 @@ const {
 const { getPaymentRuntimeStatus } = loadTypeScriptModule(
   "src/lib/payments/status.ts"
 );
+const envExample = readFileSync(".env.example", "utf8");
 
 assert.equal(typeof isSuccessfulPaymentStatus, "function");
 assert.equal(typeof validateWebhookAmount, "function");
@@ -53,6 +54,22 @@ assert.equal(validateWebhookAmount(0, 0), false);
 assert.equal(validateWebhookAmount(-100, -100), false);
 assert.equal(validateWebhookAmount(100.5, 100.5), false);
 assert.equal(validateWebhookAmount(Number.NaN, Number.NaN), false);
+
+assert.match(
+  envExample,
+  /^ONLINE_PAYMENTS_ENABLED=false$/m,
+  ".env.example must keep online payments disabled by default"
+);
+assert.match(
+  envExample,
+  /^PAYMENT_PROVIDER=manual$/m,
+  ".env.example must default to the manual recharge provider"
+);
+assert.match(
+  envExample,
+  /wechat,\s*alipay,\s*stripe,\s*manual,\s*sandbox/,
+  ".env.example must document supported payment provider values"
+);
 
 const originalOnlinePaymentsEnabled = process.env.ONLINE_PAYMENTS_ENABLED;
 const originalPaymentProvider = process.env.PAYMENT_PROVIDER;
