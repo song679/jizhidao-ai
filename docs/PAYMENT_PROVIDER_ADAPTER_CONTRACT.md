@@ -16,6 +16,19 @@ Do not mark an order as paid from browser redirects, screenshots, or client-side
 payment results. Points must only be credited after a server-side webhook has
 passed provider signature verification and amount validation.
 
+## Runtime guardrails
+
+Environment variables are documented in `.env.example`:
+
+- `ONLINE_PAYMENTS_ENABLED=false`
+- `PAYMENT_PROVIDER=manual`
+
+These variables are guardrails, not a complete payment implementation. The
+runtime status endpoint must keep online payment disabled until a real provider
+adapter and signed webhook route exist. Accidentally setting
+`ONLINE_PAYMENTS_ENABLED=true` must not make browser checkout appear live by
+itself.
+
 ## Contract file
 
 Provider adapters should implement:

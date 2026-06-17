@@ -97,6 +97,8 @@ environment variables, or admin authorization. They should not be statically opt
   warnings, and the online-payment-requested-but-not-implemented guard.
 - Admin system diagnostics now include payment runtime mode, provider, online
   payment status, and payment configuration warnings.
+- `.env.example` documents the payment guardrail variables:
+  `ONLINE_PAYMENTS_ENABLED=false` and `PAYMENT_PROVIDER=manual`.
 
 ## Recent validated commits
 
