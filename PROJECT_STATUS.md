@@ -288,3 +288,29 @@ https://www.jizhidao-ai.com/**
 如果原对话丢失，在项目目录打开新对话并发送：
 
 > 请先完整阅读 `RECOVERY_INDEX.md`、`PROJECT_STATUS.md`、`docs/PROJECT_RECOVERY_ARCHIVE.md`、`OPERATIONS.md`、最近的 Git 提交和当前代码，然后继续极智岛 AI 项目。不要读取或输出 `.env.local` 中的密钥。先检查“当前待验证事项”，再按“后续开发顺序”继续。
+
+## 2026-06-17 recovery addendum
+
+- The production site is still using manual recharge confirmation.
+- Online payment remains intentionally disabled until a real payment provider
+  adapter and signed webhook route are implemented and verified.
+- Payment safety foundation is present:
+  - `supabase/migrations/20260615_payment_webhook_safety.sql`
+  - `src/lib/payments/contract.ts`
+  - `src/lib/payments/status.ts`
+  - `src/app/api/payments/status/route.ts`
+  - `scripts/Test-PaymentContract.mjs`
+- Admin diagnostics now show payment runtime mode and payment configuration
+  warnings in `/admin/system`.
+- Production smoke currently checks public pages, API health, AI model config,
+  payment runtime status, security headers, robots, and sitemap.
+- Latest production smoke result: 44 checks passed.
+- Standard validation before pushing:
+
+```powershell
+npm.cmd run typecheck
+npm.cmd run test:payment-contract
+npm.cmd run lint
+npm.cmd run db:schema:validate
+git diff --check
+```

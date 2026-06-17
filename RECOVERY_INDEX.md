@@ -66,3 +66,13 @@ Copy-Item .env.example .env.local
 ## Latest recovery addendum
 
 - Read `docs/RECENT_PROGRESS_20260616.md` after this index to recover the latest payment, export, dynamic API, and CI progress.
+- Latest verified payment-safety work includes:
+  - payment provider adapter contract: `src/lib/payments/contract.ts`
+  - payment runtime status logic: `src/lib/payments/status.ts`
+  - public payment mode endpoint: `/api/payments/status`
+  - admin system payment diagnostics: `/admin/system`
+  - payment contract regression test: `npm.cmd run test:payment-contract`
+  - latest production smoke result: 44 checks passed
+- Online payment is still intentionally disabled until a real provider adapter
+  and signed webhook flow are implemented. Manual recharge remains the live
+  production flow.
