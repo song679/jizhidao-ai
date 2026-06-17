@@ -69,3 +69,22 @@ After choosing the first payment provider, add a provider-specific adapter under
 `src/lib/payments/` and wire it to a dedicated server route. Keep the existing
 manual recharge flow available as a fallback until real sandbox or low-value
 production transactions have been verified end-to-end.
+
+## Pre-launch checklist for online payments
+
+Before changing `ONLINE_PAYMENTS_ENABLED` away from `false`, complete every item
+below:
+
+- A provider-specific adapter exists and implements the shared contract.
+- The webhook route verifies signatures from the raw request body before parsing
+  or trusting any payment result.
+- Amount validation uses the stored order amount, not a client-submitted amount.
+- Duplicate webhook event ids are treated idempotently.
+- Failed, closed, refunded, or unknown payment events never credit points.
+- The manual recharge flow remains available while the provider is being tested.
+- Sandbox or low-value production tests have covered paid, duplicate, wrong
+  amount, malformed signature, and refund/close cases.
+- `npm run test:payment-contract`, `npm run typecheck`, `npm run lint`, and
+  `npm run test:production` pass after deployment.
+
+Until these checks are complete, the expected runtime mode is still `manual`.
