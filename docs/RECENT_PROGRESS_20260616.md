@@ -99,6 +99,11 @@ environment variables, or admin authorization. They should not be statically opt
   payment status, and payment configuration warnings.
 - `.env.example` documents the payment guardrail variables:
   `ONLINE_PAYMENTS_ENABLED=false` and `PAYMENT_PROVIDER=manual`.
+- Payment contract tests now assert that `.env.example` keeps online payments
+  disabled by default and documents the supported provider values.
+- The payment adapter contract now includes a pre-launch checklist for future
+  online payment activation. The expected runtime mode remains `manual` until
+  every checklist item is complete.
 
 ## Recent validated commits
 
@@ -119,6 +124,11 @@ environment variables, or admin authorization. They should not be statically opt
 - `6a952d1` - expose payment runtime status
 - `0b52382` - cover payment runtime status safeguards
 - `6b9d00d` - show payment runtime in system diagnostics
+- `4e73010` - update recovery snapshot with payment safeguards
+- `82b5510` - sync recovery entrypoints with payment safeguards
+- `2a2e56b` - document payment guardrail environment variables
+- `67086d6` - test payment env guardrails
+- `748c8c4` - document payment launch checklist
 
 ## Standard validation commands
 
