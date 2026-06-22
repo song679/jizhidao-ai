@@ -10,6 +10,16 @@ export type PaymentRuntimeStatus = {
   warnings: string[];
 };
 
+export const publicPaymentRuntimeStatusKeys = [
+  "mode",
+  "manualRechargeEnabled",
+  "onlinePaymentEnabled",
+  "requestedOnlinePayments",
+  "provider",
+  "adapterImplemented",
+  "warnings",
+] as const satisfies readonly (keyof PaymentRuntimeStatus)[];
+
 const providerIds = new Set<PaymentProviderId>([
   "wechat",
   "alipay",
@@ -62,5 +72,19 @@ export function getPaymentRuntimeStatus(): PaymentRuntimeStatus {
     provider: provider || "manual",
     adapterImplemented,
     warnings,
+  };
+}
+
+export function toPublicPaymentRuntimeStatus(
+  status: PaymentRuntimeStatus
+): PaymentRuntimeStatus {
+  return {
+    mode: status.mode,
+    manualRechargeEnabled: status.manualRechargeEnabled,
+    onlinePaymentEnabled: status.onlinePaymentEnabled,
+    requestedOnlinePayments: status.requestedOnlinePayments,
+    provider: status.provider,
+    adapterImplemented: status.adapterImplemented,
+    warnings: [...status.warnings],
   };
 }

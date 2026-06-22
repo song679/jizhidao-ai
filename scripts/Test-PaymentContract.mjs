@@ -32,14 +32,30 @@ const {
   isSuccessfulPaymentStatus,
   validateWebhookAmount,
 } = contractModule;
-const { getPaymentRuntimeStatus } = loadTypeScriptModule(
-  "src/lib/payments/status.ts"
-);
+const {
+  getPaymentRuntimeStatus,
+  publicPaymentRuntimeStatusKeys,
+  toPublicPaymentRuntimeStatus,
+} = loadTypeScriptModule("src/lib/payments/status.ts");
 const envExample = readFileSync(".env.example", "utf8");
 const pricingPage = readFileSync("src/app/pricing/page.tsx", "utf8");
+const expectedPublicPaymentStatusKeys = [
+  "adapterImplemented",
+  "manualRechargeEnabled",
+  "mode",
+  "onlinePaymentEnabled",
+  "provider",
+  "requestedOnlinePayments",
+  "warnings",
+];
 
 assert.equal(typeof isSuccessfulPaymentStatus, "function");
 assert.equal(typeof validateWebhookAmount, "function");
+assert.deepEqual(
+  [...publicPaymentRuntimeStatusKeys].sort(),
+  expectedPublicPaymentStatusKeys,
+  "Public payment runtime status keys must stay explicit"
+);
 
 assert.equal(isSuccessfulPaymentStatus("paid"), true);
 assert.equal(isSuccessfulPaymentStatus("refunded"), false);
@@ -55,6 +71,22 @@ assert.equal(validateWebhookAmount(0, 0), false);
 assert.equal(validateWebhookAmount(-100, -100), false);
 assert.equal(validateWebhookAmount(100.5, 100.5), false);
 assert.equal(validateWebhookAmount(Number.NaN, Number.NaN), false);
+
+const publicStatus = toPublicPaymentRuntimeStatus({
+  mode: "manual",
+  manualRechargeEnabled: true,
+  onlinePaymentEnabled: false,
+  requestedOnlinePayments: false,
+  provider: "manual",
+  adapterImplemented: false,
+  warnings: [],
+  internalSecret: "must-not-leak",
+});
+assert.deepEqual(
+  Object.keys(publicStatus).sort(),
+  expectedPublicPaymentStatusKeys,
+  "toPublicPaymentRuntimeStatus must strip unknown fields"
+);
 
 assert.match(
   envExample,
