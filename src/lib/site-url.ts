@@ -12,6 +12,16 @@ export function normalizeSiteUrl(value: string | undefined | null) {
   if (!value) return null;
 
   try {
+    const hasExplicitScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+
+    if (
+      hasExplicitScheme &&
+      !value.startsWith("http://") &&
+      !value.startsWith("https://")
+    ) {
+      return null;
+    }
+
     const url = new URL(
       value.startsWith("http://") || value.startsWith("https://")
         ? value

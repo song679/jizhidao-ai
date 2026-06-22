@@ -11,7 +11,8 @@
     "db:schema:export": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Export-SupabaseSchema.ps1",
     "db:schema:validate": "node scripts/Validate-SchemaSnapshots.mjs",
     "test:payment-contract": "node scripts/Test-PaymentContract.mjs",
-    "test:production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke.ps1"
+    "test:production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke.ps1",
+    "test:auth-contract": "node scripts/Test-AuthContract.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
