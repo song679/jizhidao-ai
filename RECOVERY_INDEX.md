@@ -75,6 +75,8 @@ Copy-Item .env.example .env.local
   - latest production smoke result: 44 checks passed
 - `.env.example` and the payment adapter contract now include explicit online
   payment guardrails and a pre-launch checklist.
+- The pricing page payment mode notice is guarded by
+  `npm.cmd run test:payment-contract`.
 - Online payment is still intentionally disabled until a real provider adapter
   and signed webhook flow are implemented. Manual recharge remains the live
   production flow.

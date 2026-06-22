@@ -105,6 +105,15 @@ environment variables, or admin authorization. They should not be statically opt
   online payment activation. The expected runtime mode remains `manual` until
   every checklist item is complete.
 
+### Pricing page payment mode notice
+
+- The pricing page now reads the public non-secret endpoint
+  `/api/payments/status`.
+- It shows users whether the site is still in manual recharge mode or future
+  online payment mode.
+- The payment contract regression test now verifies that the pricing page keeps
+  the payment status endpoint call and both manual/online user-facing messages.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -129,6 +138,9 @@ environment variables, or admin authorization. They should not be statically opt
 - `2a2e56b` - document payment guardrail environment variables
 - `67086d6` - test payment env guardrails
 - `748c8c4` - document payment launch checklist
+- `189fd52` - sync recovery docs with payment checklist
+- `04dda60` - show payment mode on pricing page
+- `0ea8339` - test pricing payment mode notice
 
 ## Standard validation commands
 
