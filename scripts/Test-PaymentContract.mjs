@@ -39,6 +39,7 @@ const {
 } = loadTypeScriptModule("src/lib/payments/status.ts");
 const envExample = readFileSync(".env.example", "utf8");
 const pricingPage = readFileSync("src/app/pricing/page.tsx", "utf8");
+const paymentStatusRoute = readFileSync("src/app/api/payments/status/route.ts", "utf8");
 const expectedPublicPaymentStatusKeys = [
   "adapterImplemented",
   "manualRechargeEnabled",
@@ -108,6 +109,16 @@ assert.match(
   pricingPage,
   /fetch\("\/api\/payments\/status"/,
   "Pricing page must read the public payment runtime status endpoint"
+);
+assert.match(
+  paymentStatusRoute,
+  /toPublicPaymentRuntimeStatus\(getPaymentRuntimeStatus\(\)\)/,
+  "Payment status API route must expose only the public runtime status shape"
+);
+assert.match(
+  paymentStatusRoute,
+  /"Cache-Control": "no-store"/,
+  "Payment status API route must not cache runtime payment configuration"
 );
 assert.ok(
   pricingPage.includes("\u5f53\u524d\u4ecd\u4e3a\u624b\u52a8\u5145\u503c\u6a21\u5f0f"),
