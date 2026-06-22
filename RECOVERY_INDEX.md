@@ -80,6 +80,7 @@ Copy-Item .env.example .env.local
 - Production smoke also checks payment runtime safety invariants.
 - README documents the current production mode and validation commands.
 - `PaymentRuntimeStatus` is shared from `src/lib/payments/status.ts`.
+- The public payment status endpoint uses an explicit response whitelist.
 - Online payment is still intentionally disabled until a real provider adapter
   and signed webhook flow are implemented. Manual recharge remains the live
   production flow.

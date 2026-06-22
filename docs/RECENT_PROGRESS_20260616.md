@@ -132,6 +132,16 @@ environment variables, or admin authorization. They should not be statically opt
   and reused by the pricing page as a type-only import. This keeps the public
   status endpoint and the UI from drifting apart.
 
+### Public payment status response guard
+
+- `/api/payments/status` now returns data through an explicit public-field
+  whitelist helper: `toPublicPaymentRuntimeStatus()`.
+- The payment status module exports `publicPaymentRuntimeStatusKeys` so the
+  public response shape stays intentional and reviewable.
+- The payment contract regression test verifies that extra internal fields are
+  stripped before the response is exposed.
+- Latest production smoke result remains 45 checks passed.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -164,6 +174,8 @@ environment variables, or admin authorization. They should not be statically opt
 - `7e60154` - sync recovery docs with payment smoke checks
 - `ae05f1a` - document current payment mode in readme
 - `3678764` - share payment runtime status type
+- `5c57762` - sync recovery docs with payment status type
+- `b228b0f` - guard public payment status fields
 
 ## Standard validation commands
 
