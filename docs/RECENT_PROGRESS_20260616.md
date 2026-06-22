@@ -142,6 +142,15 @@ environment variables, or admin authorization. They should not be statically opt
   stripped before the response is exposed.
 - Latest production smoke result remains 45 checks passed.
 
+
+### Payment status route regression guard
+
+- The payment contract regression test now reads the public payment status API
+  route and verifies that it uses `toPublicPaymentRuntimeStatus()`.
+- The same test verifies that the route keeps `Cache-Control: no-store`, so
+  runtime payment configuration is not accidentally cached.
+- Latest GitHub Actions code quality run for `50cc0f2` completed successfully.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -176,6 +185,7 @@ environment variables, or admin authorization. They should not be statically opt
 - `3678764` - share payment runtime status type
 - `5c57762` - sync recovery docs with payment status type
 - `b228b0f` - guard public payment status fields
+- `50cc0f2` - test payment status route safety
 
 ## Standard validation commands
 
