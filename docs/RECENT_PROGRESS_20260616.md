@@ -67,7 +67,7 @@ environment variables, or admin authorization. They should not be statically opt
 - The production smoke script now checks the public AI model configuration API.
 - It verifies that the selected model and model option list are present and
   structurally valid.
-- Latest production smoke result: 44 checks passed.
+- Latest production smoke result: 45 checks passed.
 
 ### Payment provider adapter boundary
 
@@ -114,6 +114,14 @@ environment variables, or admin authorization. They should not be statically opt
 - The payment contract regression test now verifies that the pricing page keeps
   the payment status endpoint call and both manual/online user-facing messages.
 
+### Payment runtime smoke safety checks
+
+- The production smoke script now separates payment status shape checks from
+  payment runtime safety checks.
+- The smoke check verifies that manual recharge stays enabled and online payment
+  cannot be reported as enabled while no provider adapter is implemented.
+- Latest production smoke result: 45 checks passed.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -141,6 +149,8 @@ environment variables, or admin authorization. They should not be statically opt
 - `189fd52` - sync recovery docs with payment checklist
 - `04dda60` - show payment mode on pricing page
 - `0ea8339` - test pricing payment mode notice
+- `41494b8` - sync recovery docs with pricing payment notice
+- `baba424` - strengthen payment status smoke checks
 
 ## Standard validation commands
 
