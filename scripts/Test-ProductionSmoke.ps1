@@ -247,23 +247,42 @@ try {
     -Headers @{ "User-Agent" = "Jizhidao-Smoke-Test/1.0" }
 
   $paymentStatus = $paymentStatusResponse.Content | ConvertFrom-Json
-  $paymentStatusPassed =
+  $warnings = @($paymentStatus.warnings)
+  $validPaymentMode = $paymentStatus.mode -in @("manual", "online")
+  $paymentShapePassed =
     [int]$paymentStatusResponse.StatusCode -eq 200 -and
-    $null -ne $paymentStatus.mode -and
+    $validPaymentMode -and
     $null -ne $paymentStatus.manualRechargeEnabled -and
     $null -ne $paymentStatus.onlinePaymentEnabled -and
-    $null -ne $paymentStatus.provider -and
+    $null -ne $paymentStatus.requestedOnlinePayments -and
+    -not [string]::IsNullOrWhiteSpace([string]$paymentStatus.provider) -and
     $null -ne $paymentStatus.adapterImplemented -and
     $null -ne $paymentStatus.warnings
+  $paymentSafetyPassed =
+    [bool]$paymentStatus.manualRechargeEnabled -eq $true -and
+    (
+      [bool]$paymentStatus.adapterImplemented -eq $true -or
+      [bool]$paymentStatus.onlinePaymentEnabled -eq $false
+    ) -and
+    (
+      $paymentStatus.mode -eq "online" -or
+      [bool]$paymentStatus.onlinePaymentEnabled -eq $false
+    )
   $paymentCacheControl = Get-HeaderValue `
     $paymentStatusResponse.Headers `
     "Cache-Control"
 
   Add-Result `
     $results `
-    "Payment runtime status" `
-    $paymentStatusPassed `
-    "mode=$($paymentStatus.mode); provider=$($paymentStatus.provider); online=$($paymentStatus.onlinePaymentEnabled)"
+    "Payment runtime status shape" `
+    $paymentShapePassed `
+    "mode=$($paymentStatus.mode); provider=$($paymentStatus.provider); warnings=$($warnings.Count)"
+
+  Add-Result `
+    $results `
+    "Payment runtime safety" `
+    $paymentSafetyPassed `
+    "manual=$($paymentStatus.manualRechargeEnabled); adapter=$($paymentStatus.adapterImplemented); online=$($paymentStatus.onlinePaymentEnabled)"
 
   Add-Result `
     $results `
