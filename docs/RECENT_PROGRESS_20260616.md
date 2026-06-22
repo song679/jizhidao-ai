@@ -122,6 +122,16 @@ environment variables, or admin authorization. They should not be statically opt
   cannot be reported as enabled while no provider adapter is implemented.
 - Latest production smoke result: 45 checks passed.
 
+### Project entrypoint and shared payment status type
+
+- The README now documents the current production mode: manual admin recharge
+  confirmation, with online payment intentionally disabled.
+- The README also lists the standard local validation commands and the current
+  production smoke baseline.
+- `PaymentRuntimeStatus` is now exported from `src/lib/payments/status.ts`
+  and reused by the pricing page as a type-only import. This keeps the public
+  status endpoint and the UI from drifting apart.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -151,6 +161,9 @@ environment variables, or admin authorization. They should not be statically opt
 - `0ea8339` - test pricing payment mode notice
 - `41494b8` - sync recovery docs with pricing payment notice
 - `baba424` - strengthen payment status smoke checks
+- `7e60154` - sync recovery docs with payment smoke checks
+- `ae05f1a` - document current payment mode in readme
+- `3678764` - share payment runtime status type
 
 ## Standard validation commands
 
