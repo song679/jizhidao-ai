@@ -1,5 +1,15 @@
 import type { PaymentProviderId } from "@/lib/payments/contract";
 
+export type PaymentRuntimeStatus = {
+  mode: "manual" | "online";
+  manualRechargeEnabled: boolean;
+  onlinePaymentEnabled: boolean;
+  requestedOnlinePayments: boolean;
+  provider: PaymentProviderId;
+  adapterImplemented: boolean;
+  warnings: string[];
+};
+
 const providerIds = new Set<PaymentProviderId>([
   "wechat",
   "alipay",
@@ -18,7 +28,7 @@ function normalizeProvider(value: string | undefined) {
     : null;
 }
 
-export function getPaymentRuntimeStatus() {
+export function getPaymentRuntimeStatus(): PaymentRuntimeStatus {
   const requestedOnlinePayments =
     process.env.ONLINE_PAYMENTS_ENABLED === "true";
   const rawProvider = process.env.PAYMENT_PROVIDER;

@@ -2,21 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { PaymentRuntimeStatus } from "@/lib/payments/status";
 import { supabase } from "@/lib/supabase";
 import {
   formatPlanPrice,
   rechargePlans,
 } from "@/lib/recharge-plans";
 
-type PaymentRuntimeStatus = {
-  mode: "manual" | "online";
-  manualRechargeEnabled: boolean;
-  onlinePaymentEnabled: boolean;
-  requestedOnlinePayments: boolean;
-  provider: string;
-  adapterImplemented: boolean;
-  warnings: string[];
-};
 
 type RechargeOrder = {
   id: string;
