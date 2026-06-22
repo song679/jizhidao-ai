@@ -8,6 +8,16 @@ import {
   rechargePlans,
 } from "@/lib/recharge-plans";
 
+type PaymentRuntimeStatus = {
+  mode: "manual" | "online";
+  manualRechargeEnabled: boolean;
+  onlinePaymentEnabled: boolean;
+  requestedOnlinePayments: boolean;
+  provider: string;
+  adapterImplemented: boolean;
+  warnings: string[];
+};
+
 type RechargeOrder = {
   id: string;
   order_no: string;
@@ -31,8 +41,25 @@ export default function PricingPage() {
   const [currentOrder, setCurrentOrder] = useState<RechargeOrder | null>(null);
   const [orders, setOrders] = useState<RechargeOrder[]>([]);
   const [orderLoading, setOrderLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] =
+    useState<PaymentRuntimeStatus | null>(null);
 
   useEffect(() => {
+    async function getPaymentStatus() {
+      try {
+        const response = await fetch("/api/payments/status", {
+          cache: "no-store",
+        });
+        const data = await response.json().catch(() => null);
+
+        if (response.ok && data && typeof data.mode === "string") {
+          setPaymentStatus(data as PaymentRuntimeStatus);
+        }
+      } catch (error) {
+        console.error("Failed to load payment runtime status:", error);
+      }
+    }
+
     async function getUser() {
       const {
         data: { session },
@@ -54,6 +81,7 @@ export default function PricingPage() {
       }
     }
 
+    getPaymentStatus();
     getUser();
 
     const {
@@ -266,6 +294,20 @@ export default function PricingPage() {
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
             极智岛 AI 使用点数计费。测试阶段暂未接入在线支付，请选择套餐后联系管理员手动处理。
           </p>
+
+          {paymentStatus && (
+            <div
+              className={`mx-auto mt-6 max-w-2xl rounded-2xl border px-5 py-4 text-sm leading-6 ${
+                paymentStatus.onlinePaymentEnabled
+                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
+                  : "border-amber-400/30 bg-amber-400/10 text-amber-100"
+              }`}
+            >
+              {paymentStatus.onlinePaymentEnabled
+                ? "当前已开启在线支付。请选择套餐后按页面提示完成付款。"
+                : "当前仍为手动充值模式：请选择套餐后生成订单，再联系管理员确认到账。"}
+            </div>
+          )}
 
           {notice && (
             <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-5 py-4 text-sm leading-6 text-cyan-100">
