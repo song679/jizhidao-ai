@@ -36,6 +36,7 @@ const { getPaymentRuntimeStatus } = loadTypeScriptModule(
   "src/lib/payments/status.ts"
 );
 const envExample = readFileSync(".env.example", "utf8");
+const pricingPage = readFileSync("src/app/pricing/page.tsx", "utf8");
 
 assert.equal(typeof isSuccessfulPaymentStatus, "function");
 assert.equal(typeof validateWebhookAmount, "function");
@@ -69,6 +70,20 @@ assert.match(
   envExample,
   /wechat,\s*alipay,\s*stripe,\s*manual,\s*sandbox/,
   ".env.example must document supported payment provider values"
+);
+
+assert.match(
+  pricingPage,
+  /fetch\("\/api\/payments\/status"/,
+  "Pricing page must read the public payment runtime status endpoint"
+);
+assert.ok(
+  pricingPage.includes("\u5f53\u524d\u4ecd\u4e3a\u624b\u52a8\u5145\u503c\u6a21\u5f0f"),
+  "Pricing page must explain manual recharge mode to users"
+);
+assert.ok(
+  pricingPage.includes("\u5f53\u524d\u5df2\u5f00\u542f\u5728\u7ebf\u652f\u4ed8"),
+  "Pricing page must include the future online payment state message"
 );
 
 const originalOnlinePaymentsEnabled = process.env.ONLINE_PAYMENTS_ENABLED;
