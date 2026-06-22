@@ -52,3 +52,33 @@ https://www.jizhidao-ai.com/**
 - 不要提交 `.env.local`
 - 不要将 Supabase Secret Key、OpenAI Key、DeepSeek Key 写入文档
 - 不要把数据库导出、用户邮箱、聊天记录或订单明细上传到公开仓库
+
+## Current production mode
+
+- Production site: https://www.jizhidao-ai.com
+- Live recharge mode: manual admin confirmation.
+- Online payment is intentionally disabled until a real provider adapter and
+  signed webhook flow are implemented and verified.
+- Public payment mode endpoint: `/api/payments/status`
+- The pricing page displays the current payment mode to users.
+
+## Standard validation
+
+Run these before pushing changes:
+
+```powershell
+npm.cmd run test:payment-contract
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run db:schema:validate
+git diff --check
+```
+
+Production smoke check:
+
+```powershell
+npm.cmd run test:production
+```
+
+The current production smoke baseline is 45 checks, including payment runtime
+shape and safety invariants.
