@@ -68,6 +68,7 @@ Run these before pushing changes:
 
 ```powershell
 npm.cmd run test:payment-contract
+npm.cmd run test:auth-contract
 npm.cmd run typecheck
 npm.cmd run lint
 npm.cmd run db:schema:validate
@@ -79,6 +80,8 @@ Production smoke check:
 ```powershell
 npm.cmd run test:production
 ```
+
+The auth contract regression test protects the authentication callback and Magic Link regression checks.
 
 The current production smoke baseline is 45 checks, including payment runtime
 shape and safety invariants.

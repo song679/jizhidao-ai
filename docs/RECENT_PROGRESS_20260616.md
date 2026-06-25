@@ -151,6 +151,19 @@ environment variables, or admin authorization. They should not be statically opt
   runtime payment configuration is not accidentally cached.
 - Latest GitHub Actions code quality run for `50cc0f2` completed successfully.
 
+
+### Authentication contract regression guard
+
+- Added `scripts/Test-AuthContract.mjs` and `npm.cmd run test:auth-contract`.
+- GitHub Actions now runs the auth contract test together with payment,
+  TypeScript, ESLint, and schema validation checks.
+- The test protects Magic Link callback URL construction, first-time user
+  account creation, safe `next` redirects, PKCE code exchange, and hash token
+  login links.
+- `normalizeSiteUrl()` now rejects explicit non-http(s) schemes instead of
+  turning them into accidental https hostnames.
+- Latest GitHub Actions code quality run for `64f32da` completed successfully.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -186,6 +199,8 @@ environment variables, or admin authorization. They should not be statically opt
 - `5c57762` - sync recovery docs with payment status type
 - `b228b0f` - guard public payment status fields
 - `50cc0f2` - test payment status route safety
+- `27ab2ab` - sync recovery docs with payment route guard
+- `64f32da` - add auth contract regression checks
 
 ## Standard validation commands
 
@@ -194,6 +209,7 @@ Run these before pushing:
 ```powershell
 npm.cmd run typecheck
 npm.cmd run test:payment-contract
+npm.cmd run test:auth-contract
 npm.cmd run lint
 npm.cmd run db:schema:validate
 git diff --check

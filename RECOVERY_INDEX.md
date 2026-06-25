@@ -72,6 +72,7 @@ Copy-Item .env.example .env.local
   - public payment mode endpoint: `/api/payments/status`
   - admin system payment diagnostics: `/admin/system`
   - payment contract regression test: `npm.cmd run test:payment-contract`
+  - auth contract regression test: `npm.cmd run test:auth-contract`
   - latest production smoke result: 45 checks passed
 - `.env.example` and the payment adapter contract now include explicit online
   payment guardrails and a pre-launch checklist.
@@ -82,6 +83,7 @@ Copy-Item .env.example .env.local
 - `PaymentRuntimeStatus` is shared from `src/lib/payments/status.ts`.
 - The public payment status endpoint uses an explicit response whitelist.
 - The payment contract test guards the public payment status route and no-store cache header.
+- The auth contract test protects Magic Link callback URL construction and safe login redirects.
 - Online payment is still intentionally disabled until a real provider adapter
   and signed webhook flow are implemented. Manual recharge remains the live
   production flow.
