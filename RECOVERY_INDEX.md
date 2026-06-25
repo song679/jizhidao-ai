@@ -71,13 +71,12 @@ Copy-Item .env.example .env.local
   - payment runtime status logic: `src/lib/payments/status.ts`
   - public payment mode endpoint: `/api/payments/status`
   - admin system payment diagnostics: `/admin/system`
-  - payment contract regression test: `npm.cmd run test:payment-contract`
-  - auth contract regression test: `npm.cmd run test:auth-contract`
+  - unified contract regression tests: `npm.cmd run test:contracts`
   - latest production smoke result: 45 checks passed
 - `.env.example` and the payment adapter contract now include explicit online
   payment guardrails and a pre-launch checklist.
 - The pricing page payment mode notice is guarded by
-  `npm.cmd run test:payment-contract`.
+  `npm.cmd run test:contracts`.
 - Production smoke also checks payment runtime safety invariants.
 - README documents the current production mode and validation commands.
 - `PaymentRuntimeStatus` is shared from `src/lib/payments/status.ts`.

@@ -81,9 +81,8 @@ environment variables, or admin authorization. They should not be statically opt
 ### Payment contract regression test
 
 - Added `scripts/Test-PaymentContract.mjs`.
-- Added `npm.cmd run test:payment-contract`.
-- GitHub Actions now verifies the payment helper behavior before lint and
-  schema checks.
+- Payment checks are now included in the unified `npm run test:contracts`
+  command that GitHub Actions runs before lint and schema checks.
 
 ### Payment runtime status endpoint
 
@@ -164,6 +163,12 @@ environment variables, or admin authorization. They should not be statically opt
   turning them into accidental https hostnames.
 - Latest GitHub Actions code quality run for `64f32da` completed successfully.
 
+### Unified contract test command
+
+- Added `npm run test:contracts` as the single local and CI entrypoint for
+  payment and authentication contract regression checks.
+- GitHub Actions now runs the unified contract command before linting.
+
 ## Recent validated commits
 
 - `70654fe` - add online payment safety foundation
@@ -208,8 +213,7 @@ Run these before pushing:
 
 ```powershell
 npm.cmd run typecheck
-npm.cmd run test:payment-contract
-npm.cmd run test:auth-contract
+npm.cmd run test:contracts
 npm.cmd run lint
 npm.cmd run db:schema:validate
 git diff --check

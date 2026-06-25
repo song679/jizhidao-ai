@@ -12,7 +12,8 @@
     "db:schema:validate": "node scripts/Validate-SchemaSnapshots.mjs",
     "test:payment-contract": "node scripts/Test-PaymentContract.mjs",
     "test:production": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-ProductionSmoke.ps1",
-    "test:auth-contract": "node scripts/Test-AuthContract.mjs"
+    "test:auth-contract": "node scripts/Test-AuthContract.mjs",
+    "test:contracts": "npm run test:payment-contract && npm run test:auth-contract"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

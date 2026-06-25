@@ -38,11 +38,8 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test payment contract helpers
-        run: npm run test:payment-contract
-
-      - name: Test auth contract helpers
-        run: npm run test:auth-contract
+      - name: Test contract helpers
+        run: npm run test:contracts
 
       - name: Lint
         run: npm run lint

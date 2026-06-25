@@ -36,6 +36,7 @@ const {
 const loginRoute = readFileSync("src/app/api/auth/login/route.ts", "utf8");
 const callbackPage = readFileSync("src/app/auth/callback/page.tsx", "utf8");
 const workflow = readFileSync(".github/workflows/code-quality.yml", "utf8");
+const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 
 const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const originalVercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
@@ -124,8 +125,13 @@ assert.match(
 );
 assert.match(
   workflow,
-  /npm run test:auth-contract/,
-  "Code quality workflow must run auth contract checks"
+  /npm run test:contracts/,
+  "Code quality workflow must run the unified contract checks"
+);
+assert.match(
+  packageJson.scripts["test:contracts"],
+  /test:auth-contract/,
+  "Unified contract test script must include auth contract checks"
 );
 
 console.log("Auth contract helpers passed.");

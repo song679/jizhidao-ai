@@ -40,6 +40,7 @@ const {
 const envExample = readFileSync(".env.example", "utf8");
 const pricingPage = readFileSync("src/app/pricing/page.tsx", "utf8");
 const paymentStatusRoute = readFileSync("src/app/api/payments/status/route.ts", "utf8");
+const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 const expectedPublicPaymentStatusKeys = [
   "adapterImplemented",
   "manualRechargeEnabled",
@@ -56,6 +57,11 @@ assert.deepEqual(
   [...publicPaymentRuntimeStatusKeys].sort(),
   expectedPublicPaymentStatusKeys,
   "Public payment runtime status keys must stay explicit"
+);
+assert.match(
+  packageJson.scripts["test:contracts"],
+  /test:payment-contract/,
+  "Unified contract test script must include payment contract checks"
 );
 
 assert.equal(isSuccessfulPaymentStatus("paid"), true);

@@ -67,8 +67,7 @@ https://www.jizhidao-ai.com/**
 Run these before pushing changes:
 
 ```powershell
-npm.cmd run test:payment-contract
-npm.cmd run test:auth-contract
+npm.cmd run test:contracts
 npm.cmd run typecheck
 npm.cmd run lint
 npm.cmd run db:schema:validate
