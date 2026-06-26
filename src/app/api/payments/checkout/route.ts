@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { notifyOrderCreated } from "@/lib/order-notifications";
 import { getRechargePlan } from "@/lib/recharge-plans";
 import { getPaymentRuntimeStatus } from "@/lib/payments/status";
-import { stripePaymentAdapter } from "@/lib/payments/stripe";
+import { getPaymentAdapter } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +107,7 @@ function isMissingOrdersTable(error: { code?: string } | null) {
 export async function POST(request: Request) {
   const paymentStatus = getPaymentRuntimeStatus();
 
-  if (!paymentStatus.onlinePaymentEnabled || paymentStatus.provider !== "stripe") {
+  if (!paymentStatus.onlinePaymentEnabled) {
     return NextResponse.json(
       {
         error: "在线支付暂未开启，请先使用手动充值或联系管理员",
@@ -216,7 +216,7 @@ export async function POST(request: Request) {
           amount_cents: plan.priceCents,
           points: plan.points,
           status: "pending",
-          payment_provider: "stripe",
+          payment_provider: paymentStatus.provider,
         })
         .select(
           "id, order_no, plan_id, plan_name, amount_cents, points, status, created_at, provider_order_id"
@@ -249,8 +249,17 @@ export async function POST(request: Request) {
     });
   }
 
+  const adapter = getPaymentAdapter(paymentStatus.provider);
+
+  if (!adapter) {
+    return NextResponse.json(
+      { error: "当前支付渠道暂未接入，请联系管理员" },
+      { status: 503 }
+    );
+  }
+
   const siteUrl = getSiteUrl(request);
-  const paymentSession = await stripePaymentAdapter.createPaymentSession({
+  const paymentSession = await adapter.createPaymentSession({
     orderNo: order.order_no,
     email: normalizedUserEmail,
     planId: order.plan_id,
@@ -269,13 +278,14 @@ export async function POST(request: Request) {
   const { error: updateError } = await context.supabaseAdmin
     .from("recharge_orders")
     .update({
-      payment_channel: "stripe",
-      payment_provider: "stripe",
+      payment_channel: paymentStatus.provider,
+      payment_provider: paymentStatus.provider,
       provider_order_id: paymentSession.providerOrderId,
       payment_created_at: new Date().toISOString(),
       payment_metadata: {
         checkoutUrl: paymentSession.checkoutUrl,
-        stripeCurrency: process.env.STRIPE_CURRENCY || "cny",
+        provider: paymentStatus.provider,
+        qrCodeUrl: paymentSession.qrCodeUrl || null,
       },
       updated_at: new Date().toISOString(),
     })
@@ -296,4 +306,3 @@ export async function POST(request: Request) {
     reused,
   });
 }
-

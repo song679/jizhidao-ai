@@ -28,10 +28,7 @@ function loadTypeScriptModule(path) {
 }
 
 const contractModule = loadTypeScriptModule("src/lib/payments/contract.ts");
-const {
-  isSuccessfulPaymentStatus,
-  validateWebhookAmount,
-} = contractModule;
+const { isSuccessfulPaymentStatus, validateWebhookAmount } = contractModule;
 const {
   getPaymentRuntimeStatus,
   publicPaymentRuntimeStatusKeys,
@@ -95,31 +92,20 @@ assert.deepEqual(
   "toPublicPaymentRuntimeStatus must strip unknown fields"
 );
 
-assert.match(
-  envExample,
-  /^ONLINE_PAYMENTS_ENABLED=false$/m,
-  ".env.example must keep online payments disabled by default"
-);
-assert.match(
-  envExample,
-  /^PAYMENT_PROVIDER=manual$/m,
-  ".env.example must default to the manual recharge provider"
-);
-assert.match(
-  envExample,
-  /Stripe/,
-  ".env.example must document supported payment provider values"
-);
-assert.match(
-  envExample,
-  /^STRIPE_SECRET_KEY=$/m,
-  ".env.example must document STRIPE_SECRET_KEY"
-);
-assert.match(
-  envExample,
-  /^STRIPE_WEBHOOK_SECRET=$/m,
-  ".env.example must document STRIPE_WEBHOOK_SECRET"
-);
+assert.match(envExample, /^ONLINE_PAYMENTS_ENABLED=false$/m);
+assert.match(envExample, /^PAYMENT_PROVIDER=manual$/m);
+assert.match(envExample, /alipay, wechat, stripe, manual/);
+assert.match(envExample, /^ALIPAY_APP_ID=$/m);
+assert.match(envExample, /^ALIPAY_PRIVATE_KEY=$/m);
+assert.match(envExample, /^ALIPAY_PUBLIC_KEY=$/m);
+assert.match(envExample, /^WECHAT_APP_ID=$/m);
+assert.match(envExample, /^WECHAT_MCH_ID=$/m);
+assert.match(envExample, /^WECHAT_MCH_SERIAL_NO=$/m);
+assert.match(envExample, /^WECHAT_PRIVATE_KEY=$/m);
+assert.match(envExample, /^WECHAT_API_V3_KEY=$/m);
+assert.match(envExample, /^WECHAT_PLATFORM_PUBLIC_KEY=$/m);
+assert.match(envExample, /^STRIPE_SECRET_KEY=$/m);
+assert.match(envExample, /^STRIPE_WEBHOOK_SECRET=$/m);
 
 assert.match(
   pricingPage,
@@ -137,22 +123,43 @@ assert.match(
   "Payment status API route must not cache runtime payment configuration"
 );
 assert.ok(
-  pricingPage.includes("\u5f53\u524d\u4ecd\u4e3a\u624b\u52a8\u5145\u503c\u6a21\u5f0f"),
+  pricingPage.includes("当前仍为手动充值模式"),
   "Pricing page must explain manual recharge mode to users"
 );
 assert.ok(
-  pricingPage.includes("\u5f53\u524d\u5df2\u5f00\u542f\u5728\u7ebf\u652f\u4ed8"),
-  "Pricing page must include the future online payment state message"
+  pricingPage.includes("当前已开启在线支付"),
+  "Pricing page must include the online payment state message"
 );
 
-const originalOnlinePaymentsEnabled = process.env.ONLINE_PAYMENTS_ENABLED;
-const originalPaymentProvider = process.env.PAYMENT_PROVIDER;
-const originalStripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const originalStripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const trackedEnvNames = [
+  "ONLINE_PAYMENTS_ENABLED",
+  "PAYMENT_PROVIDER",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "ALIPAY_APP_ID",
+  "ALIPAY_PRIVATE_KEY",
+  "ALIPAY_PUBLIC_KEY",
+  "WECHAT_APP_ID",
+  "WECHAT_MCH_ID",
+  "WECHAT_MCH_SERIAL_NO",
+  "WECHAT_PRIVATE_KEY",
+  "WECHAT_API_V3_KEY",
+  "WECHAT_PLATFORM_PUBLIC_KEY",
+];
+const originalEnv = Object.fromEntries(
+  trackedEnvNames.map((name) => [name, process.env[name]])
+);
+
+function clearProviderKeys() {
+  for (const name of trackedEnvNames.slice(2)) {
+    delete process.env[name];
+  }
+}
 
 try {
   delete process.env.ONLINE_PAYMENTS_ENABLED;
   delete process.env.PAYMENT_PROVIDER;
+  clearProviderKeys();
 
   assert.deepEqual(getPaymentRuntimeStatus(), {
     mode: "manual",
@@ -165,6 +172,33 @@ try {
   });
 
   process.env.ONLINE_PAYMENTS_ENABLED = "true";
+  process.env.PAYMENT_PROVIDER = "alipay";
+
+  assert.deepEqual(getPaymentRuntimeStatus(), {
+    mode: "manual",
+    manualRechargeEnabled: true,
+    onlinePaymentEnabled: false,
+    requestedOnlinePayments: true,
+    provider: "alipay",
+    adapterImplemented: true,
+    warnings: ["online_payments_requested_but_provider_not_configured"],
+  });
+
+  process.env.ALIPAY_APP_ID = "app_contract";
+  process.env.ALIPAY_PRIVATE_KEY = "private_contract";
+  process.env.ALIPAY_PUBLIC_KEY = "public_contract";
+
+  assert.deepEqual(getPaymentRuntimeStatus(), {
+    mode: "online",
+    manualRechargeEnabled: true,
+    onlinePaymentEnabled: true,
+    requestedOnlinePayments: true,
+    provider: "alipay",
+    adapterImplemented: true,
+    warnings: [],
+  });
+
+  clearProviderKeys();
   process.env.PAYMENT_PROVIDER = "wechat";
 
   assert.deepEqual(getPaymentRuntimeStatus(), {
@@ -173,13 +207,29 @@ try {
     onlinePaymentEnabled: false,
     requestedOnlinePayments: true,
     provider: "wechat",
-    adapterImplemented: false,
-    warnings: ["online_payments_requested_but_adapter_not_implemented"],
+    adapterImplemented: true,
+    warnings: ["online_payments_requested_but_provider_not_configured"],
   });
 
+  process.env.WECHAT_APP_ID = "wx_contract";
+  process.env.WECHAT_MCH_ID = "mch_contract";
+  process.env.WECHAT_MCH_SERIAL_NO = "serial_contract";
+  process.env.WECHAT_PRIVATE_KEY = "private_contract";
+  process.env.WECHAT_API_V3_KEY = "12345678901234567890123456789012";
+  process.env.WECHAT_PLATFORM_PUBLIC_KEY = "public_contract";
+
+  assert.deepEqual(getPaymentRuntimeStatus(), {
+    mode: "online",
+    manualRechargeEnabled: true,
+    onlinePaymentEnabled: true,
+    requestedOnlinePayments: true,
+    provider: "wechat",
+    adapterImplemented: true,
+    warnings: [],
+  });
+
+  clearProviderKeys();
   process.env.PAYMENT_PROVIDER = "stripe";
-  delete process.env.STRIPE_SECRET_KEY;
-  delete process.env.STRIPE_WEBHOOK_SECRET;
 
   assert.deepEqual(getPaymentRuntimeStatus(), {
     mode: "manual",
@@ -204,9 +254,8 @@ try {
     warnings: [],
   });
 
+  clearProviderKeys();
   process.env.PAYMENT_PROVIDER = "unknown-provider";
-  delete process.env.STRIPE_SECRET_KEY;
-  delete process.env.STRIPE_WEBHOOK_SECRET;
 
   assert.deepEqual(getPaymentRuntimeStatus(), {
     mode: "manual",
@@ -222,28 +271,12 @@ try {
     ],
   });
 } finally {
-  if (typeof originalOnlinePaymentsEnabled === "undefined") {
-    delete process.env.ONLINE_PAYMENTS_ENABLED;
-  } else {
-    process.env.ONLINE_PAYMENTS_ENABLED = originalOnlinePaymentsEnabled;
-  }
-
-  if (typeof originalPaymentProvider === "undefined") {
-    delete process.env.PAYMENT_PROVIDER;
-  } else {
-    process.env.PAYMENT_PROVIDER = originalPaymentProvider;
-  }
-
-  if (typeof originalStripeSecretKey === "undefined") {
-    delete process.env.STRIPE_SECRET_KEY;
-  } else {
-    process.env.STRIPE_SECRET_KEY = originalStripeSecretKey;
-  }
-
-  if (typeof originalStripeWebhookSecret === "undefined") {
-    delete process.env.STRIPE_WEBHOOK_SECRET;
-  } else {
-    process.env.STRIPE_WEBHOOK_SECRET = originalStripeWebhookSecret;
+  for (const name of trackedEnvNames) {
+    if (typeof originalEnv[name] === "undefined") {
+      delete process.env[name];
+    } else {
+      process.env[name] = originalEnv[name];
+    }
   }
 }
 

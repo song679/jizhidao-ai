@@ -304,7 +304,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            极智岛 AI 使用点数计费。正式支付开启后，可使用信用卡、支付宝或微信支付完成充值。
+            极智岛 AI 使用点数计费。正式支付开启后，可使用支付宝或微信支付完成充值。
           </p>
 
           {paymentStatus && (
@@ -316,7 +316,7 @@ export default function PricingPage() {
               }`}
             >
               {paymentStatus.onlinePaymentEnabled
-                ? "当前已开启在线支付。请选择套餐后进入安全收银台，可使用已启用的信用卡、支付宝或微信支付。"
+                ? "当前已开启在线支付。请选择套餐后进入安全收银台，可使用已启用的支付宝或微信支付。"
                 : "当前仍为手动充值模式：请选择套餐后生成订单，再联系管理员确认到账。"}
             </div>
           )}
@@ -413,7 +413,7 @@ export default function PricingPage() {
                 <>
                   <p>1. 先登录网站，确认当前账号邮箱。</p>
                   <p>2. 点击上方套餐按钮，系统会创建订单并跳转到安全支付页面。</p>
-                  <p>3. 在收银台选择信用卡、支付宝或微信支付等可用方式完成付款。</p>
+                  <p>3. 在收银台或微信二维码页面完成付款。</p>
                   <p>4. 支付成功后系统会自动为你的账号增加对应点数。</p>
                   <p>5. 如遇到账延迟，可在订单页面查看状态或联系管理员。</p>
                 </>
@@ -588,7 +588,7 @@ export default function PricingPage() {
           <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
             <p>1. 当前为测试阶段，所有套餐主要用于页面展示和小范围试用。</p>
             <p>2. 新用户注册后默认赠送测试点数，可在点数明细页查看流水。</p>
-            <p>3. 后续可接入微信、支付宝或 Stripe 支付，实现自动充值。</p>
+            <p>3. 当前可按配置接入支付宝或微信支付，实现自动充值；Stripe 仅作为海外主体备用方案。</p>
             <p>4. 不同 AI 模型消耗点数不同，具体费用以聊天页模型选择器显示为准。</p>
           </div>
         </section>

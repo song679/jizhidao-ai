@@ -1,5 +1,4 @@
 import type { PaymentProviderId } from "@/lib/payments/contract";
-
 export type PaymentRuntimeStatus = {
   mode: "manual" | "online";
   manualRechargeEnabled: boolean;
@@ -38,11 +37,31 @@ function normalizeProvider(value: string | undefined) {
     : null;
 }
 
-function isStripeProviderConfigured() {
-  return Boolean(
-    process.env.STRIPE_SECRET_KEY?.trim() &&
-      process.env.STRIPE_WEBHOOK_SECRET?.trim()
-  );
+function hasEnv(name: string) {
+  return Boolean(process.env[name]?.trim());
+}
+
+function isProviderConfigured(provider: PaymentProviderId | null) {
+  if (provider === "alipay") {
+    return ["ALIPAY_APP_ID", "ALIPAY_PRIVATE_KEY", "ALIPAY_PUBLIC_KEY"].every(hasEnv);
+  }
+
+  if (provider === "wechat") {
+    return [
+      "WECHAT_APP_ID",
+      "WECHAT_MCH_ID",
+      "WECHAT_MCH_SERIAL_NO",
+      "WECHAT_PRIVATE_KEY",
+      "WECHAT_API_V3_KEY",
+      "WECHAT_PLATFORM_PUBLIC_KEY",
+    ].every(hasEnv);
+  }
+
+  if (provider === "stripe") {
+    return ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"].every(hasEnv);
+  }
+
+  return false;
 }
 
 export function getPaymentRuntimeStatus(): PaymentRuntimeStatus {
@@ -50,8 +69,8 @@ export function getPaymentRuntimeStatus(): PaymentRuntimeStatus {
     process.env.ONLINE_PAYMENTS_ENABLED === "true";
   const rawProvider = process.env.PAYMENT_PROVIDER;
   const provider = normalizeProvider(rawProvider);
-  const adapterImplemented = provider === "stripe";
-  const providerConfigured = provider === "stripe" ? isStripeProviderConfigured() : false;
+  const adapterImplemented = provider === "alipay" || provider === "wechat" || provider === "stripe";
+  const providerConfigured = isProviderConfigured(provider);
   const onlinePaymentEnabled =
     requestedOnlinePayments && adapterImplemented && providerConfigured;
   const warnings: string[] = [];
