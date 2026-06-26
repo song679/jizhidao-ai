@@ -86,17 +86,66 @@ body {
   color: #0891b2 !important;
 }
 
+.text-cyan-50,
+.text-cyan-50\/90,
+.text-cyan-100,
+.text-cyan-200,
+.text-cyan-200\/70 {
+  color: #155e75 !important;
+}
+
+.text-amber-100,
+.text-amber-200,
+.text-amber-300,
+.text-yellow-100,
+.text-yellow-200,
+.text-yellow-300 {
+  color: #92400e !important;
+}
+
+.text-emerald-100,
+.text-emerald-200,
+.text-emerald-300 {
+  color: #047857 !important;
+}
+
+.text-red-100,
+.text-red-200,
+.text-red-300,
+.text-rose-100,
+.text-rose-200,
+.text-rose-300 {
+  color: #be123c !important;
+}
+
+.text-violet-100,
+.text-violet-200,
+.text-violet-300 {
+  color: #6d28d9 !important;
+}
+
 .hover\:text-white:hover {
   color: #0891b2 !important;
 }
 
+.hover\:text-cyan-200:hover,
 .hover\:text-cyan-300:hover,
 .hover\:text-cyan-400:hover {
   color: #0e7490 !important;
 }
 
+.hover\:text-red-300:hover,
+.hover\:text-rose-300:hover {
+  color: #be123c !important;
+}
+
 .bg-cyan-400 {
   background-color: #06b6d4 !important;
+}
+
+.bg-rose-500.text-white,
+.hover\:bg-rose-400:hover.text-white {
+  color: #fff7f7 !important;
 }
 
 .hover\:bg-cyan-300:hover {
