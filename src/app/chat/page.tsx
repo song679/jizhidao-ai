@@ -710,13 +710,13 @@ async function logout() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-6 sm:py-6">
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 sm:mb-6 sm:pb-5">
-          <Link href="/" className="text-2xl font-bold tracking-tight">
+      <div className="flex min-h-screen w-full flex-col px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+        <header className="mb-4 flex items-center justify-between gap-4 border-b border-slate-800 pb-4 sm:mb-6 sm:pb-5">
+          <Link href="/" className="shrink-0 text-2xl font-bold tracking-tight">
             极智岛 AI
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
+          <nav className="hidden shrink-0 items-center gap-6 text-sm text-slate-300 lg:flex">
             <a href="/chat" className="text-cyan-300">
               AI聊天
             </a>
@@ -728,8 +728,8 @@ async function logout() {
             </a>
           </nav>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-            <label className="hidden items-center rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 md:flex">
+          <div className="ml-auto flex shrink-0 items-center justify-end gap-2 sm:gap-3">
+            <label className="hidden items-center rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-300 xl:flex">
               <span className="mr-2 shrink-0">当前模型：</span>
               <select
                 value={selectedModelId}
@@ -765,7 +765,7 @@ async function logout() {
             {isAdmin && (
               <a
                 href="/admin"
-                className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 xl:inline-block"
+                className="hidden rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-cyan-400/60 hover:text-cyan-300 lg:inline-block"
               >
                 管理后台
               </a>
@@ -774,7 +774,7 @@ async function logout() {
             {userEmail && (
               <Link
                 href="/account"
-                className="hidden text-sm text-slate-300 hover:text-cyan-300 lg:inline"
+                className="hidden max-w-52 truncate text-sm text-slate-300 hover:text-cyan-300 2xl:inline"
                 title="进入账户中心"
               >
                 {userEmail}
@@ -799,7 +799,7 @@ async function logout() {
           </div>
         </header>
 
-        <section className="grid flex-1 gap-6 md:grid-cols-[260px_1fr]">
+        <section className="grid flex-1 gap-5 md:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
           <div className="space-y-3 md:hidden">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {promptTools.map((tool) => (
@@ -1041,7 +1041,7 @@ async function logout() {
 
           </aside>
 
-          <section className="flex h-[68dvh] min-h-[480px] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60 md:h-[75vh] md:min-h-0">
+          <section className="flex h-[72dvh] min-h-[560px] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60 md:h-[calc(100dvh-9.5rem)] md:min-h-[620px]">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 p-4 sm:gap-4 sm:p-5">
               <div>
                 <h1 className="text-xl font-bold">{activeTool}</h1>
@@ -1104,7 +1104,7 @@ async function logout() {
                   }`}
                 >
                   <div
-                    className={`max-w-[92%] rounded-3xl px-4 py-3 text-sm leading-7 sm:max-w-[85%] sm:px-5 sm:py-4 ${
+                    className={`max-w-[94%] rounded-3xl px-4 py-3 text-sm leading-7 sm:max-w-[88%] lg:max-w-[82%] sm:px-5 sm:py-4 ${
                       message.role === "user"
                         ? "bg-cyan-400 text-slate-950"
                         : "bg-slate-800 text-slate-100"
