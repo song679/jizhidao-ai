@@ -108,6 +108,26 @@ export default function PricingPage() {
     setNotice("");
 
     try {
+      if (paymentStatus?.onlinePaymentEnabled) {
+        const response = await fetch("/api/payments/checkout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ planId }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || typeof data.checkoutUrl !== "string") {
+          throw new Error(data?.error || "创建在线支付订单失败");
+        }
+
+        setNotice("正在跳转到安全支付页面，请稍候...");
+        window.location.assign(data.checkoutUrl);
+        return;
+      }
+
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
@@ -284,7 +304,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            极智岛 AI 使用点数计费。测试阶段暂未接入在线支付，请选择套餐后联系管理员手动处理。
+            极智岛 AI 使用点数计费。正式支付开启后，可使用信用卡、支付宝或微信支付完成充值。
           </p>
 
           {paymentStatus && (
@@ -296,7 +316,7 @@ export default function PricingPage() {
               }`}
             >
               {paymentStatus.onlinePaymentEnabled
-                ? "当前已开启在线支付。请选择套餐后按页面提示完成付款。"
+                ? "当前已开启在线支付。请选择套餐后进入安全收银台，可使用已启用的信用卡、支付宝或微信支付。"
                 : "当前仍为手动充值模式：请选择套餐后生成订单，再联系管理员确认到账。"}
             </div>
           )}
@@ -385,13 +405,27 @@ export default function PricingPage() {
 
         <section className="mt-12 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8">
-            <h2 className="text-2xl font-bold">如何充值</h2>
+            <h2 className="text-2xl font-bold">
+              {paymentStatus?.onlinePaymentEnabled ? "如何在线充值" : "如何充值"}
+            </h2>
             <div className="mt-5 space-y-4 text-sm leading-7 text-slate-300">
-              <p>1. 先登录网站，确认当前账号邮箱。</p>
-              <p>2. 点击上方套餐按钮，页面会自动生成充值信息。</p>
-              <p>3. 复制充值信息，连同付款截图一起发送给管理员。</p>
-              <p>4. 请在订单显示的有效期内付款，过期订单会自动关闭。</p>
-              <p>5. 管理员确认后，系统会为你的账号增加对应点数。</p>
+              {paymentStatus?.onlinePaymentEnabled ? (
+                <>
+                  <p>1. 先登录网站，确认当前账号邮箱。</p>
+                  <p>2. 点击上方套餐按钮，系统会创建订单并跳转到安全支付页面。</p>
+                  <p>3. 在收银台选择信用卡、支付宝或微信支付等可用方式完成付款。</p>
+                  <p>4. 支付成功后系统会自动为你的账号增加对应点数。</p>
+                  <p>5. 如遇到账延迟，可在订单页面查看状态或联系管理员。</p>
+                </>
+              ) : (
+                <>
+                  <p>1. 先登录网站，确认当前账号邮箱。</p>
+                  <p>2. 点击上方套餐按钮，页面会自动生成充值信息。</p>
+                  <p>3. 复制充值信息，连同付款截图一起发送给管理员。</p>
+                  <p>4. 请在订单显示的有效期内付款，过期订单会自动关闭。</p>
+                  <p>5. 管理员确认后，系统会为你的账号增加对应点数。</p>
+                </>
+              )}
             </div>
           </div>
 

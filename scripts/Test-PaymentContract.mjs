@@ -107,8 +107,18 @@ assert.match(
 );
 assert.match(
   envExample,
-  /wechat,\s*alipay,\s*stripe,\s*manual,\s*sandbox/,
+  /Stripe/,
   ".env.example must document supported payment provider values"
+);
+assert.match(
+  envExample,
+  /^STRIPE_SECRET_KEY=$/m,
+  ".env.example must document STRIPE_SECRET_KEY"
+);
+assert.match(
+  envExample,
+  /^STRIPE_WEBHOOK_SECRET=$/m,
+  ".env.example must document STRIPE_WEBHOOK_SECRET"
 );
 
 assert.match(
@@ -137,6 +147,8 @@ assert.ok(
 
 const originalOnlinePaymentsEnabled = process.env.ONLINE_PAYMENTS_ENABLED;
 const originalPaymentProvider = process.env.PAYMENT_PROVIDER;
+const originalStripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const originalStripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 try {
   delete process.env.ONLINE_PAYMENTS_ENABLED;
@@ -165,7 +177,36 @@ try {
     warnings: ["online_payments_requested_but_adapter_not_implemented"],
   });
 
+  process.env.PAYMENT_PROVIDER = "stripe";
+  delete process.env.STRIPE_SECRET_KEY;
+  delete process.env.STRIPE_WEBHOOK_SECRET;
+
+  assert.deepEqual(getPaymentRuntimeStatus(), {
+    mode: "manual",
+    manualRechargeEnabled: true,
+    onlinePaymentEnabled: false,
+    requestedOnlinePayments: true,
+    provider: "stripe",
+    adapterImplemented: true,
+    warnings: ["online_payments_requested_but_provider_not_configured"],
+  });
+
+  process.env.STRIPE_SECRET_KEY = "sk_test_contract";
+  process.env.STRIPE_WEBHOOK_SECRET = "whsec_contract";
+
+  assert.deepEqual(getPaymentRuntimeStatus(), {
+    mode: "online",
+    manualRechargeEnabled: true,
+    onlinePaymentEnabled: true,
+    requestedOnlinePayments: true,
+    provider: "stripe",
+    adapterImplemented: true,
+    warnings: [],
+  });
+
   process.env.PAYMENT_PROVIDER = "unknown-provider";
+  delete process.env.STRIPE_SECRET_KEY;
+  delete process.env.STRIPE_WEBHOOK_SECRET;
 
   assert.deepEqual(getPaymentRuntimeStatus(), {
     mode: "manual",
@@ -191,6 +232,18 @@ try {
     delete process.env.PAYMENT_PROVIDER;
   } else {
     process.env.PAYMENT_PROVIDER = originalPaymentProvider;
+  }
+
+  if (typeof originalStripeSecretKey === "undefined") {
+    delete process.env.STRIPE_SECRET_KEY;
+  } else {
+    process.env.STRIPE_SECRET_KEY = originalStripeSecretKey;
+  }
+
+  if (typeof originalStripeWebhookSecret === "undefined") {
+    delete process.env.STRIPE_WEBHOOK_SECRET;
+  } else {
+    process.env.STRIPE_WEBHOOK_SECRET = originalStripeWebhookSecret;
   }
 }
 
