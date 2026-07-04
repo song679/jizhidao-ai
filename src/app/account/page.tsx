@@ -272,7 +272,7 @@ export default function AccountPage() {
               <p className="mt-2 text-2xl font-bold text-cyan-300">
                 {loading ? "..." : Number(value).toLocaleString()}
               </p>
-              <p className="mt-1 text-xs text-slate-500">{note}</p>
+              <p className="mt-1 text-xs text-slate-400">{note}</p>
             </div>
           ))}
         </section>
@@ -287,7 +287,7 @@ export default function AccountPage() {
               >
                 <span>
                   <strong className="block">继续使用 AI</strong>
-                  <span className="mt-1 block text-xs text-slate-500">
+                  <span className="mt-1 block text-xs text-slate-400">
                     进入聊天并选择需要的模型
                   </span>
                 </span>
@@ -299,7 +299,7 @@ export default function AccountPage() {
               >
                 <span>
                   <strong className="block">完整点数明细</strong>
-                  <span className="mt-1 block text-xs text-slate-500">
+                  <span className="mt-1 block text-xs text-slate-400">
                     查看最近 30 条余额变动
                   </span>
                 </span>
@@ -311,7 +311,7 @@ export default function AccountPage() {
               >
                 <span>
                   <strong className="block">充值与会员</strong>
-                  <span className="mt-1 block text-xs text-slate-500">
+                  <span className="mt-1 block text-xs text-slate-400">
                     查看点数套餐和管理员联系方式
                   </span>
                 </span>
@@ -323,7 +323,7 @@ export default function AccountPage() {
               >
                 <span>
                   <strong className="block">我的充值订单</strong>
-                  <span className="mt-1 block text-xs text-slate-500">
+                  <span className="mt-1 block text-xs text-slate-400">
                     查看待确认、已到账和历史订单
                   </span>
                 </span>
@@ -335,7 +335,7 @@ export default function AccountPage() {
               >
                 <span>
                   <strong className="block">帮助与问题反馈</strong>
-                  <span className="mt-1 block text-xs text-slate-500">
+                  <span className="mt-1 block text-xs text-slate-400">
                     整理问题信息并联系管理员
                   </span>
                 </span>
@@ -367,7 +367,7 @@ export default function AccountPage() {
               </div>
               <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/40 p-4">
                 <p className="text-sm font-semibold">个人数据副本</p>
-                <p className="mt-2 text-xs leading-6 text-slate-500">
+                <p className="mt-2 text-xs leading-6 text-slate-400">
                   下载当前账号的账户信息、点数流水、聊天会话和消息记录。文件包含个人信息，请勿随意分享。
                 </p>
                 <button
@@ -498,7 +498,7 @@ export default function AccountPage() {
                         {parsePointDescription(transaction.description).note ||
                           "点数变动"}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-400">
                         {formatTime(transaction.created_at)}
                       </p>
                     </div>
@@ -513,7 +513,7 @@ export default function AccountPage() {
                         {transaction.change_amount >= 0 ? "+" : ""}
                         {transaction.change_amount.toLocaleString()}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-400">
                         余额 {transaction.balance_after.toLocaleString()}
                       </p>
                     </div>

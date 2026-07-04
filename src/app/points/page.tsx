@@ -199,7 +199,7 @@ export default function PointsPage() {
                 key={label}
                 className="rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-4 text-center sm:px-5"
               >
-                <p className="text-[11px] text-slate-500 sm:text-xs">{label}</p>
+                <p className="text-[11px] text-slate-400 sm:text-xs">{label}</p>
                 <p className="mt-2 text-lg font-bold text-cyan-300 sm:text-2xl">
                   {Number(value).toLocaleString()}
                 </p>
@@ -216,7 +216,7 @@ export default function PointsPage() {
               {loading ? "..." : points ?? 0}
             </div>
 
-            <p className="mt-3 text-sm text-slate-500">
+            <p className="mt-3 text-sm text-slate-400">
               点数用于 AI 聊天、写作、电商文案、短视频脚本等功能。
             </p>
 
@@ -232,7 +232,7 @@ export default function PointsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xl font-bold">最近点数变动</h2>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">最多显示 30 条</span>
+                <span className="text-xs text-slate-400">最多显示 30 条</span>
                 <button
                   type="button"
                   onClick={() => void loadPoints()}
@@ -281,13 +281,13 @@ export default function PointsPage() {
                             "点数变动"}
                         </p>
 
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="mt-2 text-xs text-slate-400">
                           {formatTime(item.created_at)}
                         </p>
                       </div>
 
                       <div className="text-left md:text-right">
-                        <p className="text-xs text-slate-500">变动后余额</p>
+                        <p className="text-xs text-slate-400">变动后余额</p>
                         <p className="mt-1 text-lg font-bold text-slate-200">
                           {item.balance_after}
                         </p>

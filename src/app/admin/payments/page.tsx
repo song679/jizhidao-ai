@@ -349,7 +349,7 @@ export default function AdminPaymentsPage() {
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="搜索订单号、事件 ID 或支付渠道"
-                className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-cyan-400"
+                className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-cyan-400"
               />
               <button
                 type="submit"
@@ -370,11 +370,11 @@ export default function AdminPaymentsPage() {
             </div>
 
             {loading ? (
-              <p className="px-5 py-12 text-center text-sm text-slate-500">
+              <p className="px-5 py-12 text-center text-sm text-slate-400">
                 正在加载支付回调事件…
               </p>
             ) : events.length === 0 ? (
-              <p className="px-5 py-12 text-center text-sm text-slate-500">
+              <p className="px-5 py-12 text-center text-sm text-slate-400">
                 当前筛选条件下没有支付回调事件。
               </p>
             ) : (
@@ -385,7 +385,7 @@ export default function AdminPaymentsPage() {
                 >
                   <div className="min-w-0">
                     <p className="font-semibold text-white">{item.provider}</p>
-                    <p className="mt-1 break-all text-xs text-slate-500">
+                    <p className="mt-1 break-all text-xs text-slate-400">
                       {item.event_id}
                     </p>
                     {item.event_type && (
@@ -419,7 +419,7 @@ export default function AdminPaymentsPage() {
                       {statusLabels[item.processing_status] ||
                         item.processing_status}
                     </span>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-slate-400">
                       完成：{formatDate(item.processed_at)}
                     </p>
                   </div>

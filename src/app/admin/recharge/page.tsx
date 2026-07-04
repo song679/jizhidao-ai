@@ -320,7 +320,7 @@ export default function AdminRechargePage() {
                         className={`mt-1 block text-xs ${
                           operation === item.id
                             ? "text-slate-800"
-                            : "text-slate-500"
+                            : "text-slate-400"
                         }`}
                       >
                         {item.note}
@@ -414,13 +414,13 @@ export default function AdminRechargePage() {
                 <p className="text-sm font-bold text-cyan-200">提交前核对</p>
                 <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
                   <div>
-                    <dt className="text-xs text-slate-500">当前余额</dt>
+                    <dt className="text-xs text-slate-400">当前余额</dt>
                     <dd className="mt-1 font-bold">
                       {accountPoints.toLocaleString()} 点
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-slate-500">本次变动</dt>
+                    <dt className="text-xs text-slate-400">本次变动</dt>
                     <dd
                       className={`mt-1 font-bold ${
                         operation === "deduct"
@@ -436,7 +436,7 @@ export default function AdminRechargePage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-slate-500">预计余额</dt>
+                    <dt className="text-xs text-slate-400">预计余额</dt>
                     <dd
                       className={`mt-1 font-bold ${
                         (projectedBalance ?? 0) < 0
@@ -504,7 +504,7 @@ export default function AdminRechargePage() {
                 </p>
                 <h2 className="mt-2 text-2xl font-bold">最近管理操作</h2>
               </div>
-              <span className="text-xs text-slate-500">最多显示 20 条</span>
+              <span className="text-xs text-slate-400">最多显示 20 条</span>
             </div>
 
             <div className="mt-6 overflow-hidden rounded-lg border border-slate-800">
@@ -535,11 +535,11 @@ export default function AdminRechargePage() {
                                 : "管理员手动扣减")}
                           </p>
                           {parsedDescription.adminEmail && (
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-400">
                               操作管理员：{parsedDescription.adminEmail}
                             </p>
                           )}
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-400">
                             {formatTime(record.created_at)}
                           </p>
                         </div>
@@ -555,7 +555,7 @@ export default function AdminRechargePage() {
                             {record.change_amount >= 0 ? "+" : ""}
                             {record.change_amount.toLocaleString()} 点
                           </p>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-400">
                             余额 {record.balance_after.toLocaleString()} 点
                           </p>
                         </div>

@@ -827,7 +827,7 @@ async function logout() {
                   aria-expanded={mobileHistoryOpen}
                 >
                   <span>历史会话</span>
-                  <span className="truncate text-xs font-normal text-slate-500">
+                  <span className="truncate text-xs font-normal text-slate-400">
                     {sessions.find((item) => item.id === currentSessionId)
                       ?.title || "新聊天"}
                   </span>
@@ -844,7 +844,7 @@ async function logout() {
               {mobileHistoryOpen && (
                 <div className="max-h-56 space-y-1 overflow-y-auto border-t border-slate-800 p-2">
                   {sessions.length === 0 ? (
-                    <p className="px-3 py-4 text-xs text-slate-500">
+                    <p className="px-3 py-4 text-xs text-slate-400">
                       暂无历史会话
                     </p>
                   ) : (
@@ -972,7 +972,7 @@ async function logout() {
             <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4">
               <div className="text-sm text-slate-400">剩余点数</div>
               <div className="mt-2 text-3xl font-bold text-cyan-300">{points}</div>
-              <div className="mt-1 text-xs text-slate-500">测试账户赠送</div>
+              <div className="mt-1 text-xs text-slate-400">测试账户赠送</div>
               <a
                 href="/pricing"
                 className="mt-3 inline-block text-xs font-semibold text-cyan-300 hover:text-cyan-200"
@@ -1000,7 +1000,7 @@ async function logout() {
 
             <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
               {sessions.length === 0 ? (
-                <div className="text-xs text-slate-500">暂无历史会话</div>
+                <div className="text-xs text-slate-400">暂无历史会话</div>
               ) : (
                 sessions.map((item) => (
                   <div
@@ -1198,7 +1198,7 @@ async function logout() {
                    }
                  }}
                  disabled={!userEmail || loading || !hasEnoughPoints}
-                 className="min-h-16 max-h-40 w-full resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                 className="min-h-16 max-h-40 w-full resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
                  placeholder={
                    !userEmail
                      ? "请先登录后使用聊天功能"
@@ -1230,7 +1230,7 @@ async function logout() {
                 )}
               </div>
 
-              <p className="mt-3 text-xs leading-5 text-slate-500">
+              <p className="mt-3 text-xs leading-5 text-slate-400">
                 {!userEmail ? (
                   "请先登录后使用 AI 聊天功能。"
                 ) : !hasEnoughPoints ? (
@@ -1247,7 +1247,7 @@ async function logout() {
                 )}
               </p>
               {input.length > MAX_INPUT_LENGTH * 0.75 && (
-                <p className="mt-2 text-right text-xs text-slate-500">
+                <p className="mt-2 text-right text-xs text-slate-400">
                   {input.length} / {MAX_INPUT_LENGTH}
                 </p>
               )}

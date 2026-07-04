@@ -184,7 +184,7 @@ export default function AdminSystemPage() {
                   key={label}
                   className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
                 >
-                  <p className="text-xs text-slate-500">{label}</p>
+                  <p className="text-xs text-slate-400">{label}</p>
                   <p className="mt-2 break-all text-sm font-semibold text-slate-200">
                     {value}
                   </p>
@@ -222,7 +222,7 @@ export default function AdminSystemPage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-slate-400">
                 可选变量未配置不会影响系统总体状态；至少配置一个 AI 服务商即可提供聊天服务。
               </p>
             </section>
@@ -237,7 +237,7 @@ export default function AdminSystemPage() {
                   >
                     <div>
                       <p className="font-semibold">{check.label}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-400">
                         {check.detail}
                       </p>
                     </div>
@@ -253,7 +253,7 @@ export default function AdminSystemPage() {
 
             <section className="mt-8">
               <h2 className="text-xl font-bold">业务数据一致性</h2>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-slate-400">
                 仅执行只读统计检查，不会自动修改用户余额或订单。
               </p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -265,7 +265,7 @@ export default function AdminSystemPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-semibold">{check.label}</p>
-                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                        <p className="mt-2 text-xs leading-5 text-slate-400">
                           {check.detail}
                         </p>
                       </div>

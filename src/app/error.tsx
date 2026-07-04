@@ -73,7 +73,7 @@ export default function ErrorPage({
             返回首页
           </Link>
         </div>
-        <p className="mt-6 text-xs text-slate-500">
+        <p className="mt-6 text-xs text-slate-400">
           故障编号：<span className="font-mono text-slate-400">{errorCode}</span>
         </p>
       </section>

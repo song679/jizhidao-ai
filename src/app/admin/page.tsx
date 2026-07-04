@@ -328,7 +328,7 @@ export default function AdminDashboardPage() {
               <p className="mt-2 text-2xl font-bold text-cyan-300">
                 {Number(value).toLocaleString()}
               </p>
-              <p className="mt-1 text-xs text-slate-500">{note}</p>
+              <p className="mt-1 text-xs text-slate-400">{note}</p>
             </div>
           ))}
         </section>
@@ -357,7 +357,7 @@ export default function AdminDashboardPage() {
                 <p className="mt-2 text-xl font-bold text-cyan-300">
                   {Number(value).toLocaleString()}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">{note}</p>
+                <p className="mt-1 text-xs text-slate-400">{note}</p>
               </div>
             ))}
           </section>
@@ -367,7 +367,7 @@ export default function AdminDashboardPage() {
           <div className="min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">近 7 天 AI 使用</h2>
-              <span className="text-xs text-slate-500">北京时间</span>
+              <span className="text-xs text-slate-400">北京时间</span>
             </div>
 
             <div className="mt-4 space-y-3 md:hidden">
@@ -395,13 +395,13 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div className="rounded-xl bg-slate-950/70 p-3">
-                      <p className="text-xs text-slate-500">消耗点数</p>
+                      <p className="text-xs text-slate-400">消耗点数</p>
                       <p className="mt-1 font-semibold">
                         {item.pointsUsed.toLocaleString()}
                       </p>
                     </div>
                     <div className="rounded-xl bg-slate-950/70 p-3 text-right">
-                      <p className="text-xs text-slate-500">充值点数</p>
+                      <p className="text-xs text-slate-400">充值点数</p>
                       <p className="mt-1 font-semibold text-cyan-300">
                         {item.recharged.toLocaleString()}
                       </p>
@@ -473,7 +473,7 @@ export default function AdminDashboardPage() {
           <aside className="min-w-0 border-t border-slate-800 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">模型使用分布</h2>
-              <span className="text-xs text-slate-500">近 7 天</span>
+              <span className="text-xs text-slate-400">近 7 天</span>
             </div>
 
             <div className="mt-4 divide-y divide-slate-800 border-y border-slate-800">
@@ -486,7 +486,7 @@ export default function AdminDashboardPage() {
                     <p className="truncate font-semibold" title={item.model}>
                       {item.model}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-400">
                       消耗 {item.pointsUsed.toLocaleString()} 点
                     </p>
                   </div>
@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
         <section className="border-t border-slate-800 py-8">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">最近点数活动</h2>
-            <span className="text-xs text-slate-500">最近 20 条</span>
+            <span className="text-xs text-slate-400">最近 20 条</span>
           </div>
 
           <div className="mt-4 space-y-3 md:hidden">
@@ -522,7 +522,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="break-all font-semibold">{item.email}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-400">
                         {formatTime(item.created_at)}
                       </p>
                     </div>
@@ -539,13 +539,13 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
                     <div>
-                      <p className="text-xs text-slate-500">类型</p>
+                      <p className="text-xs text-slate-400">类型</p>
                       <p className="mt-1 font-semibold">
                         {transactionLabels[item.type] || item.type}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-slate-500">变动后余额</p>
+                      <p className="text-xs text-slate-400">变动后余额</p>
                       <p className="mt-1 font-semibold">
                         {item.balance_after.toLocaleString()} 点
                       </p>
@@ -555,7 +555,7 @@ export default function AdminDashboardPage() {
                     {description.note || "无说明"}
                   </p>
                   {description.adminEmail && (
-                    <p className="mt-2 break-all text-xs text-slate-500">
+                    <p className="mt-2 break-all text-xs text-slate-400">
                       操作管理员：{description.adminEmail}
                     </p>
                   )}
@@ -614,7 +614,7 @@ export default function AdminDashboardPage() {
                     <td className="px-4 py-4 text-right">
                       {item.balance_after.toLocaleString()}
                     </td>
-                    <td className="px-4 py-4 text-xs text-slate-500">
+                    <td className="px-4 py-4 text-xs text-slate-400">
                       {formatTime(item.created_at)}
                     </td>
                   </tr>
@@ -633,7 +633,7 @@ export default function AdminDashboardPage() {
             </table>
           </div>
           {data?.generatedAt && (
-            <p className="mt-3 text-right text-xs text-slate-500">
+            <p className="mt-3 text-right text-xs text-slate-400">
               数据更新时间：{formatTime(data.generatedAt)}
             </p>
           )}

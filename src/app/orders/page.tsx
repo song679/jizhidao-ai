@@ -255,11 +255,11 @@ export default function OrdersPage() {
                 key={label}
                 className="rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-4"
               >
-                <p className="text-xs text-slate-500">{label}</p>
+                <p className="text-xs text-slate-400">{label}</p>
                 <p className="mt-2 text-2xl font-bold text-cyan-300">
                   {Number(value).toLocaleString()}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">{note}</p>
+                <p className="mt-1 text-xs text-slate-400">{note}</p>
               </div>
             ))}
           </section>
@@ -295,7 +295,7 @@ export default function OrdersPage() {
                       {getOrderStatusLabel(order)}
                     </span>
                   </div>
-                  <p className="mt-2 break-all font-mono text-xs text-slate-500">
+                  <p className="mt-2 break-all font-mono text-xs text-slate-400">
                     {order.order_no}
                   </p>
                   <p className="mt-2 text-sm text-slate-400">
@@ -313,7 +313,7 @@ export default function OrdersPage() {
                     <p className="text-xl font-bold text-cyan-300">
                       ¥{formatPlanPrice(order.amount_cents)}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {order.points.toLocaleString()} 点
                     </p>
                   </div>
@@ -392,7 +392,7 @@ export default function OrdersPage() {
                 ["订单备注", selectedOrder.note || "—"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-xl bg-slate-950/70 p-4">
-                  <dt className="text-xs text-slate-500">{label}</dt>
+                  <dt className="text-xs text-slate-400">{label}</dt>
                   <dd className="mt-2 break-words text-slate-100">{value}</dd>
                 </div>
               ))}

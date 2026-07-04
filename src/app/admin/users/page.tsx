@@ -223,7 +223,7 @@ export default function AdminUsersPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="输入邮箱搜索用户"
-            className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm outline-none placeholder:text-slate-500 focus:border-cyan-400"
+            className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-cyan-400"
           />
           <button
             type="submit"
@@ -258,7 +258,7 @@ export default function AdminUsersPage() {
           <div className="min-w-0">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold">用户列表</h2>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-400">
                 第 {page} / {totalPages} 页
               </span>
             </div>
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
                     <p className="break-all font-semibold">{user.email}</p>
                     <div className="mt-4 flex items-end justify-between gap-4">
                       <div>
-                        <p className="text-xs text-slate-500">当前余额</p>
+                        <p className="text-xs text-slate-400">当前余额</p>
                         <p className="mt-1 text-2xl font-bold text-cyan-300">
                           {user.points.toLocaleString()} 点
                         </p>
@@ -298,7 +298,7 @@ export default function AdminUsersPage() {
                         查看账户
                       </button>
                     </div>
-                    <p className="mt-4 text-xs text-slate-500">
+                    <p className="mt-4 text-xs text-slate-400">
                       最近更新：{formatTime(user.updated_at)}
                     </p>
                   </article>
@@ -425,7 +425,7 @@ export default function AdminUsersPage() {
                 <div className="mt-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold">最近点数流水</h3>
-                    <span className="text-xs text-slate-500">最多 30 条</span>
+                    <span className="text-xs text-slate-400">最多 30 条</span>
                   </div>
 
                   <div className="mt-3 divide-y divide-slate-800 border-y border-slate-800">
@@ -463,7 +463,7 @@ export default function AdminUsersPage() {
                                 }
                               </p>
                             )}
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-400">
                               {formatTime(transaction.created_at)}
                             </p>
                           </div>
@@ -478,7 +478,7 @@ export default function AdminUsersPage() {
                               {transaction.change_amount >= 0 ? "+" : ""}
                               {transaction.change_amount.toLocaleString()}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-400">
                               余额{" "}
                               {transaction.balance_after.toLocaleString()}
                             </p>

@@ -324,7 +324,7 @@ export default function AdminTransactionsPage() {
             <p className="text-sm text-slate-400">
               共 {total.toLocaleString()} 条记录
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               第 {page} / {totalPages} 页
             </p>
           </div>
@@ -354,7 +354,7 @@ export default function AdminTransactionsPage() {
                         <p className="break-all font-semibold">
                           {transaction.email}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-slate-400">
                           {formatTime(transaction.created_at)}
                         </p>
                       </div>
@@ -372,14 +372,14 @@ export default function AdminTransactionsPage() {
 
                     <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
                       <div>
-                        <p className="text-xs text-slate-500">流水类型</p>
+                        <p className="text-xs text-slate-400">流水类型</p>
                         <p className="mt-1 font-semibold">
                           {transactionLabels[transaction.type] ||
                             transaction.type}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-slate-500">变动后余额</p>
+                        <p className="text-xs text-slate-400">变动后余额</p>
                         <p className="mt-1 font-semibold">
                           {transaction.balance_after.toLocaleString()} 点
                         </p>
@@ -387,12 +387,12 @@ export default function AdminTransactionsPage() {
                     </div>
 
                     <div className="mt-4 text-sm leading-6">
-                      <p className="text-xs text-slate-500">说明</p>
+                      <p className="text-xs text-slate-400">说明</p>
                       <p className="mt-1 break-words text-slate-300">
                         {description.note || "无说明"}
                       </p>
                       {description.adminEmail && (
-                        <p className="mt-2 break-all text-xs text-slate-500">
+                        <p className="mt-2 break-all text-xs text-slate-400">
                           操作管理员：{description.adminEmail}
                         </p>
                       )}
@@ -437,7 +437,7 @@ export default function AdminTransactionsPage() {
 
                     return (
                       <tr key={transaction.id} className="hover:bg-slate-900/60">
-                        <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">
+                        <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-400">
                           {formatTime(transaction.created_at)}
                         </td>
                         <td className="max-w-64 truncate px-4 py-4 font-semibold">
@@ -450,7 +450,7 @@ export default function AdminTransactionsPage() {
                         <td className="max-w-72 truncate px-4 py-4 text-slate-400">
                           {description.note || "无说明"}
                         </td>
-                        <td className="max-w-56 truncate px-4 py-4 text-xs text-slate-500">
+                        <td className="max-w-56 truncate px-4 py-4 text-xs text-slate-400">
                           {description.adminEmail || "—"}
                         </td>
                         <td

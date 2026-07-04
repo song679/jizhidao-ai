@@ -144,7 +144,7 @@ export default function LoginPage() {
                 enterKeyHint="send"
                 required
                 placeholder="请输入你的邮箱"
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
               />
             </div>
 
@@ -162,7 +162,7 @@ export default function LoginPage() {
                     : "发送登录链接"}
             </button>
 
-            <p className="text-center text-xs leading-5 text-slate-500">
+            <p className="text-center text-xs leading-5 text-slate-400">
               点击“发送登录链接”即表示你已阅读并同意
               <Link
                 href="/terms"
@@ -200,7 +200,7 @@ export default function LoginPage() {
                   <li>2. 找到极智岛 AI 登录邮件，垃圾邮件也请检查。</li>
                   <li>3. 点击最新邮件中的链接，浏览器会自动返回网站。</li>
                 </ol>
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-slate-400">
                   登录链接为一次性链接；重复发送后请使用最新一封邮件。
                 </p>
               </div>
@@ -216,7 +216,7 @@ export default function LoginPage() {
               </a>
             </div>
 
-            <p className="text-center text-xs leading-5 text-slate-500">
+            <p className="text-center text-xs leading-5 text-slate-400">
               当前为测试阶段，请使用真实可收信邮箱登录。登录链接可能会进入垃圾邮件，请注意查看。
               充值前请阅读
               <Link

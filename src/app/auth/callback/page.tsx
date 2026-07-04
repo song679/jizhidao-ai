@@ -96,7 +96,7 @@ export default function AuthCallbackPage() {
         <p className="mt-4 text-sm leading-7 text-slate-300">{message}</p>
 
         {!failed && (
-          <p className="mt-4 text-xs leading-5 text-slate-500">
+          <p className="mt-4 text-xs leading-5 text-slate-400">
             请不要重复点击登录邮件；验证完成后页面会自动进入 AI 聊天。
           </p>
         )}

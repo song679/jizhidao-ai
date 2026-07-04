@@ -389,7 +389,7 @@ export default function AdminOrdersPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="搜索订单号或用户邮箱"
-              className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
+              className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white outline-none placeholder:text-slate-400 focus:border-cyan-400"
             />
             <button
               type="submit"
@@ -465,23 +465,23 @@ export default function AdminOrdersPage() {
 
               <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
                 <div>
-                  <p className="text-xs text-slate-500">支付金额</p>
+                  <p className="text-xs text-slate-400">支付金额</p>
                   <p className="mt-1 font-bold">
                     ¥{formatPlanPrice(order.amount_cents)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">到账点数</p>
+                  <p className="text-xs text-slate-400">到账点数</p>
                   <p className="mt-1 font-bold text-cyan-300">
                     {order.points.toLocaleString()} 点
                   </p>
                 </div>
               </div>
 
-              <p className="mt-4 break-all font-mono text-xs text-slate-500">
+              <p className="mt-4 break-all font-mono text-xs text-slate-400">
                 {order.order_no}
               </p>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-slate-400">
                 {formatDate(order.created_at)}
               </p>
 
@@ -560,7 +560,7 @@ export default function AdminOrdersPage() {
                   <td className="px-4 py-4">
                     {getOrderStatusLabel(order)}
                   </td>
-                  <td className="px-4 py-4 text-xs text-slate-500">
+                  <td className="px-4 py-4 text-xs text-slate-400">
                     {formatDate(order.created_at)}
                   </td>
                   <td className="px-4 py-4 text-right">
@@ -686,7 +686,7 @@ export default function AdminOrdersPage() {
                 ["备注", selectedOrder.note || "—"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-xl bg-slate-950/70 p-4">
-                  <dt className="text-xs text-slate-500">{label}</dt>
+                  <dt className="text-xs text-slate-400">{label}</dt>
                   <dd className="mt-2 break-words text-slate-100">{value}</dd>
                 </div>
               ))}
@@ -758,7 +758,7 @@ export default function AdminOrdersPage() {
                   onChange={(event) => setPaymentReference(event.target.value)}
                   maxLength={100}
                   placeholder="填写微信、支付宝或银行交易单号"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </label>
 
@@ -770,7 +770,7 @@ export default function AdminOrdersPage() {
                   maxLength={200}
                   rows={3}
                   placeholder="例如：已核对微信收款记录"
-                  className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                  className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </label>
             </div>

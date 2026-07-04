@@ -243,7 +243,7 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-500">
+        <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-400">
           <span>极智岛 AI</span>
           <div className="flex flex-wrap gap-x-5 gap-y-3">
             <Link href="/terms" className="hover:text-white">

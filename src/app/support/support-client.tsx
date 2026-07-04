@@ -189,7 +189,7 @@ export default function SupportClient({
                   onChange={(event) => setDescription(event.target.value)}
                   rows={6}
                   placeholder="例如：选择 ChatGPT 后发送消息，页面提示内部技术问题。大约发生在今天 14:30。"
-                  className="resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 leading-6 outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                  className="resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 leading-6 outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </label>
             </div>
@@ -221,7 +221,7 @@ export default function SupportClient({
               <div className="mt-5 space-y-4 text-sm">
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-slate-950/40 p-4">
                   <div className="min-w-0">
-                    <p className="text-cyan-200/70">邮箱</p>
+                    <p className="text-cyan-100/90">邮箱</p>
                     <a
                       href={`mailto:${supportEmail}`}
                       className="mt-1 block break-all font-semibold text-white hover:text-cyan-200"
@@ -239,7 +239,7 @@ export default function SupportClient({
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-slate-950/40 p-4">
                   <div className="min-w-0">
-                    <p className="text-cyan-200/70">微信</p>
+                    <p className="text-cyan-100/90">微信</p>
                     <p className="mt-1 break-all font-semibold text-white">
                       {adminWechat}
                     </p>

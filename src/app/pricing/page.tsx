@@ -431,7 +431,7 @@ export default function PricingPage() {
 
           <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6 sm:p-8">
             <h2 className="text-2xl font-bold text-cyan-100">联系管理员</h2>
-            <p className="mt-5 text-sm leading-7 text-cyan-50/90">
+            <p className="mt-5 text-sm leading-7 text-cyan-50">
               当前为测试阶段，暂未开放自动支付。充值前请先确认账号邮箱，避免点数加到错误账号。
             </p>
 
@@ -543,10 +543,10 @@ export default function PricingPage() {
                       <p className="font-semibold">
                         {order.plan_name} · {order.points.toLocaleString()} 点
                       </p>
-                      <p className="mt-1 break-all text-xs text-slate-500">
+                      <p className="mt-1 break-all text-xs text-slate-400">
                         订单号：{order.order_no}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-400">
                         {new Date(order.created_at).toLocaleString("zh-CN", {
                           hour12: false,
                         })}
@@ -593,7 +593,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-500">
+        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 py-8 text-sm text-slate-400">
           <span>购买或使用点数前，请阅读相关规则。</span>
           <div className="flex gap-5">
             <Link href="/terms" className="text-cyan-300 hover:text-cyan-200">
