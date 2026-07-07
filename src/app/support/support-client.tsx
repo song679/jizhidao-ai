@@ -219,7 +219,7 @@ export default function SupportClient({
             <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 p-6">
               <h2 className="text-xl font-bold text-cyan-100">管理员联系方式</h2>
               <div className="mt-5 space-y-4 text-sm">
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-slate-950/40 p-4">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-white/70 p-4">
                   <div className="min-w-0">
                     <p className="text-cyan-100/90">邮箱</p>
                     <a
@@ -237,7 +237,7 @@ export default function SupportClient({
                     复制
                   </button>
                 </div>
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-slate-950/40 p-4">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/20 bg-white/70 p-4">
                   <div className="min-w-0">
                     <p className="text-cyan-100/90">微信</p>
                     <p className="mt-1 break-all font-semibold text-white">

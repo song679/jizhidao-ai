@@ -412,7 +412,7 @@ export default function AccountPage() {
                       className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-rose-400"
                       placeholder="请输入当前登录邮箱"
                     />
-                    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-rose-400/20 bg-slate-950/60 p-3 text-xs leading-5 text-slate-300">
+                    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-rose-400/20 bg-white/80 p-3 text-xs leading-5 text-slate-300">
                       <input
                         type="checkbox"
                         checked={deleteAcknowledged}

@@ -394,13 +394,13 @@ export default function AdminDashboardPage() {
                     />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl bg-slate-950/70 p-3">
+                    <div className="rounded-xl bg-white/80 p-3">
                       <p className="text-xs text-slate-400">消耗点数</p>
                       <p className="mt-1 font-semibold">
                         {item.pointsUsed.toLocaleString()}
                       </p>
                     </div>
-                    <div className="rounded-xl bg-slate-950/70 p-3 text-right">
+                    <div className="rounded-xl bg-white/80 p-3 text-right">
                       <p className="text-xs text-slate-400">充值点数</p>
                       <p className="mt-1 font-semibold text-cyan-300">
                         {item.recharged.toLocaleString()}
@@ -537,7 +537,7 @@ export default function AdminDashboardPage() {
                       {item.change_amount.toLocaleString()}
                     </p>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
+                  <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-white/80 p-4 text-sm">
                     <div>
                       <p className="text-xs text-slate-400">类型</p>
                       <p className="mt-1 font-semibold">

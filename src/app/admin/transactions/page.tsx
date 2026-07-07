@@ -370,7 +370,7 @@ export default function AdminTransactionsPage() {
                       </p>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
+                    <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-white/80 p-4 text-sm">
                       <div>
                         <p className="text-xs text-slate-400">流水类型</p>
                         <p className="mt-1 font-semibold">

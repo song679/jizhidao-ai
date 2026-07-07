@@ -391,7 +391,7 @@ export default function OrdersPage() {
                 ["最后更新", formatDate(selectedOrder.updated_at)],
                 ["订单备注", selectedOrder.note || "—"],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl bg-slate-950/70 p-4">
+                <div key={label} className="rounded-xl bg-white/80 p-4">
                   <dt className="text-xs text-slate-400">{label}</dt>
                   <dd className="mt-2 break-words text-slate-100">{value}</dd>
                 </div>

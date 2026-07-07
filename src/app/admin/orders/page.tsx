@@ -463,7 +463,7 @@ export default function AdminOrdersPage() {
                 </span>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-950/70 p-4 text-sm">
+              <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-white/80 p-4 text-sm">
                 <div>
                   <p className="text-xs text-slate-400">支付金额</p>
                   <p className="mt-1 font-bold">
@@ -685,7 +685,7 @@ export default function AdminOrdersPage() {
                 ["最后更新", formatDate(selectedOrder.updated_at)],
                 ["备注", selectedOrder.note || "—"],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl bg-slate-950/70 p-4">
+                <div key={label} className="rounded-xl bg-white/80 p-4">
                   <dt className="text-xs text-slate-400">{label}</dt>
                   <dd className="mt-2 break-words text-slate-100">{value}</dd>
                 </div>

@@ -436,7 +436,7 @@ export default function PricingPage() {
             </p>
 
             <div className="mt-6 space-y-3 text-sm">
-              <div className="rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4">
+              <div className="rounded-2xl border border-cyan-300/20 bg-white/70 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-cyan-200">管理员微信</p>
@@ -454,7 +454,7 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-cyan-300/20 bg-slate-950/50 p-4">
+              <div className="rounded-2xl border border-cyan-300/20 bg-white/70 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-cyan-200">管理员邮箱</p>

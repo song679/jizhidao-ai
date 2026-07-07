@@ -193,7 +193,7 @@ export default function LoginPage() {
             )}
 
             {messageType === "success" && (
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
+              <div className="rounded-2xl border border-slate-800 bg-white/80 p-4 text-sm leading-6 text-slate-300">
                 <p className="font-bold text-white">接下来这样操作：</p>
                 <ol className="mt-2 space-y-1">
                   <li>1. 打开 {sentEmail} 的收件箱。</li>
